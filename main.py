@@ -8,7 +8,8 @@ import bluetooth_constants
 import bluetooth_exceptions
 
 g_mainloop = None
-
+g_ad_manager = None 
+g_rcu_advertisement = None
 
 class Advertisement(dbus.service.Object):
 
@@ -86,10 +87,8 @@ class Advertisement(dbus.service.Object):
 
     @dbus.service.method(bluetooth_constants.DBUS_PROPERTIES, in_signature="s", out_signature="a{sv}")
     def GetAll(self, interface):
-        print("GetAll")
         if interface != bluetooth_constants.ADVERTISEMENT_INTERFACE:
             raise bluetooth_exceptions.InvalidArgsException()
-        print("returning props")
         return self.get_properties()[bluetooth_constants.ADVERTISEMENT_INTERFACE]
 
     @dbus.service.method(bluetooth_constants.ADVERTISEMENT_INTERFACE, in_signature="", out_signature="")
@@ -111,7 +110,7 @@ class RCUAdvertisement(Advertisement):
 
 
 def register_ad_cb():
-    print("2. RCUAdvertisement registered, instruct controller to start advertising")
+    print("Registered RCUAdvertisement " + g_rcu_advertisement.get_path() + ", instruct controller to start advertising", )
 
 
 def register_ad_error_cb(error):
@@ -223,13 +222,39 @@ class Application(dbus.service.Object):
 
 
 def register_app_cb():
-    print('3. GATT application registered')
+    print('Registered GATT application')
 
 
 def register_app_error_cb(error):
-    print('3. Failed to register application: ' + str(error))
+    print('Failed to register GATT application: ' + str(error))
     g_mainloop.quit()
 
+def set_connected_status(status):
+    if (status == 1):
+        print("connected")
+        stop_advertising()
+    else:
+        print("disconnected")
+        start_advertising()
+
+"""
+When a connection for a device which is already known is established, a PropertiesChanged signal is
+instead emitted with the Connected property
+"""
+def properties_changed(interface, changed, invalidated, path):
+    if (interface == bluetooth_constants.DEVICE_INTERFACE):
+        if ("Connected" in changed):
+            set_connected_status(changed["Connected"])
+
+"""
+When a connection for a previously unknown device is established, an InterfacesAdded signal is
+emitted by a device object with Connected status.
+"""
+def interfaces_added(path, interfaces):
+    if bluetooth_constants.DEVICE_INTERFACE in interfaces:
+        properties = interfaces[bluetooth_constants.DEVICE_INTERFACE]
+        if ("Connected" in properties):
+            set_connected_status(properties["Connected"])
 
 """
 Returns the first object that the bluez service has that has a GattManager1 interface,
@@ -247,33 +272,56 @@ def find_adapter(bus):
     return None
 
 
+def start_advertising():
+    global g_ad_manager 
+    global g_rcu_advertisement
+    # This causes BlueZ to instruct the controller to start advertising
+    g_ad_manager.RegisterAdvertisement(
+        g_rcu_advertisement.get_path(),
+        {},
+        reply_handler=register_ad_cb,
+        error_handler=register_ad_error_cb,
+    )
+
+def stop_advertising():
+    global g_ad_manager 
+    global g_rcu_advertisement
+    g_ad_manager.UnregisterAdvertisement(g_rcu_advertisement.get_path())
+    print("Unregistered RCUAdvertisement " + g_rcu_advertisement.get_path() + ", instruct controller to stop advertising")
+
 def main():
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
-
     bus = dbus.SystemBus()
 
+    # handle connections status
+    bus.add_signal_receiver(properties_changed,
+    dbus_interface = bluetooth_constants.DBUS_PROPERTIES,
+    signal_name = "PropertiesChanged",
+    path_keyword = "path")
+
+    bus.add_signal_receiver(interfaces_added,
+    dbus_interface = bluetooth_constants.DBUS_OM_IFACE,
+    signal_name = "InterfacesAdded")
+
+    # require bluetooth adapter
     adapter_obj = find_adapter(bus)
     if not adapter_obj:
         print('adapter_obj not found')
         return
 
-    print("1. power on the bluetooth adapter..")
+    print("1. Power on the bluetooth adapter..")
     adapter_props = dbus.Interface(bus.get_object(
         bluetooth_constants.BLUEZ_SERVICE_NAME, adapter_obj), bluetooth_constants.DBUS_PROPERTIES)
     adapter_props.Set(bluetooth_constants.ADAPTER_INTERFACE,
                       bluetooth_constants.ADAPTER_PROP_POWER, dbus.Boolean(1))
 
-    print("2. advertise procedure")
-    ad_manager = dbus.Interface(bus.get_object(
+    print("2. Advertise procedure")
+    global g_ad_manager
+    g_ad_manager = dbus.Interface(bus.get_object(
         bluetooth_constants.BLUEZ_SERVICE_NAME, adapter_obj), bluetooth_constants.ADVERTISING_MANAGER_INTERFACE)
-    rcu_advertisement = RCUAdvertisement(bus, 0)
-    # This causes BlueZ to instruct the controller to start advertising
-    ad_manager.RegisterAdvertisement(
-        rcu_advertisement.get_path(),
-        {},
-        reply_handler=register_ad_cb,
-        error_handler=register_ad_error_cb,
-    )
+    global g_rcu_advertisement
+    g_rcu_advertisement = RCUAdvertisement(bus, 0)
+    start_advertising()
 
     print('3. Registering GATT procedure')
     gatt_service_manager = dbus.Interface(
