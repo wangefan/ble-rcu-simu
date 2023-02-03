@@ -100,6 +100,8 @@ class RCUAdvertisement(Advertisement):
     BASE_PATH = "/org/bluez/rcu/advertisement"
     def __init__(self, bus, index):
         Advertisement.__init__(self, bus, self.BASE_PATH, index, "peripheral")
+        self.add_service_uuid('1812')
+        self.add_service_uuid('1802')
         self.add_manufacturer_data(
             0xFFFF, [0x70, 0x74],
         )
