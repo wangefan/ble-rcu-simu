@@ -119,6 +119,126 @@ def register_ad_error_cb(error):
     print("2. Failed to register RCUAdvertisement: " + str(error))
     g_mainloop.quit()
 
+class Descriptor(dbus.service.Object):
+    """
+    org.bluez.GattDescriptor1 interface implementation
+    """
+    def __init__(self, bus, index, uuid, flags, characteristic):
+        self.path = characteristic.path + '/desc' + str(index)
+        self.bus = bus
+        self.uuid = uuid
+        self.flags = flags
+        self.chrc = characteristic
+        dbus.service.Object.__init__(self, bus, self.path)
+
+    def get_properties(self):
+        return {
+                bluetooth_constants.GATT_DESCRIPTOR_INTERFACE: {
+                        'Characteristic': self.chrc.get_path(),
+                        'UUID': self.uuid,
+                        'Flags': self.flags,
+                }
+        }
+
+    def get_path(self):
+        return dbus.ObjectPath(self.path)
+
+    @dbus.service.method(bluetooth_constants.DBUS_PROPERTIES,
+                         in_signature='s',
+                         out_signature='a{sv}')
+    def GetAll(self, interface):
+        if interface != bluetooth_constants.GATT_DESCRIPTOR_INTERFACE:
+            raise bluetooth_exceptions.InvalidArgsException()
+
+        return self.get_properties()[bluetooth_constants.GATT_DESCRIPTOR_INTERFACE]
+
+    @dbus.service.method(bluetooth_constants.GATT_DESCRIPTOR_INTERFACE,
+                        in_signature='a{sv}',
+                        out_signature='ay')
+    def ReadValue(self, options):
+        print ('Default ReadValue called, returning error')
+        raise bluetooth_exceptions.NotSupportedException()
+
+    @dbus.service.method(bluetooth_constants.GATT_DESCRIPTOR_INTERFACE, in_signature='aya{sv}')
+    def WriteValue(self, value, options):
+        print('Default WriteValue called, returning error')
+        raise bluetooth_exceptions.NotSupportedException()
+class Characteristic(dbus.service.Object):
+    """
+    org.bluez.GattCharacteristic1 interface implementation
+    """
+    def __init__(self, bus, index, uuid, flags, service):
+        self.path = service.path + '/char' + str(index)
+        self.bus = bus
+        self.uuid = uuid
+        self.service = service
+        self.flags = flags
+        self.descriptors = []
+        dbus.service.Object.__init__(self, bus, self.path)
+
+    def get_properties(self):
+        return {
+                bluetooth_constants.GATT_CHARACTERISTIC_INTERFACE: {
+                        'Service': self.service.get_path(),
+                        'UUID': self.uuid,
+                        'Flags': self.flags,
+                        'Descriptors': dbus.Array(
+                                self.get_descriptor_paths(),
+                                signature='o')
+                }
+        }
+
+    def get_path(self):
+        return dbus.ObjectPath(self.path)
+
+    def add_descriptor(self, descriptor):
+        self.descriptors.append(descriptor)
+
+    def get_descriptor_paths(self):
+        result = []
+        for desc in self.descriptors:
+            result.append(desc.get_path())
+        return result
+
+    def get_descriptors(self):
+        return self.descriptors
+
+    @dbus.service.method(bluetooth_constants.DBUS_PROPERTIES,
+                         in_signature='s',
+                         out_signature='a{sv}')
+    def GetAll(self, interface):
+        if interface != bluetooth_constants.GATT_CHARACTERISTIC_INTERFACE:
+            raise bluetooth_exceptions.InvalidArgsException()
+
+        return self.get_properties()[bluetooth_constants.GATT_CHARACTERISTIC_INTERFACE]
+
+    @dbus.service.method(bluetooth_constants.GATT_CHARACTERISTIC_INTERFACE, in_signature='a{sv}', out_signature='ay')
+    def ReadValue(self, options):
+        print('Default ReadValue called, returning error')
+        raise bluetooth_exceptions.NotSupportedException()
+
+    @dbus.service.method(bluetooth_constants.GATT_CHARACTERISTIC_INTERFACE, in_signature='aya{sv}')
+    def WriteValue(self, value, options):
+        print('Default WriteValue called, returning error')
+        raise bluetooth_exceptions.NotSupportedException()
+
+    @dbus.service.method(bluetooth_constants.GATT_CHARACTERISTIC_INTERFACE)
+    def StartNotify(self):
+        print('Default StartNotify called, returning error')
+        raise bluetooth_exceptions.NotSupportedException()
+
+    @dbus.service.method(bluetooth_constants.GATT_CHARACTERISTIC_INTERFACE)
+    def StopNotify(self):
+        print('Default StopNotify called, returning error')
+        raise bluetooth_exceptions.NotSupportedException()
+
+    @dbus.service.signal(bluetooth_constants.DBUS_PROPERTIES, signature='sa{sv}as')
+    def PropertiesChanged(self, interface, changed, invalidated):
+        pass
+        
+    @dbus.service.signal(bluetooth_constants.DBUS_PROPERTIES, signature='ay')
+    def ReportValueChanged(self, reportValue):
+        pass
 
 class Service(dbus.service.Object):
     """
@@ -170,7 +290,78 @@ class Service(dbus.service.Object):
             raise bluetooth_exceptions.InvalidArgsException()
         return self.get_properties()[bluetooth_constants.GATT_SERVICE_INTERFACE]
 
+class BatteryLevelCharacteristic(Characteristic):
+    """
+    Fake Battery Level characteristic. The battery level is drained by 2 points
+    every 5 seconds.
 
+    """
+    BATTERY_LVL_UUID = '2a19'
+
+    def __init__(self, bus, index, service):
+        Characteristic.__init__(
+                self, bus, index,
+                self.BATTERY_LVL_UUID,
+                ['read', 'notify'],
+                service)
+        self.notifying = False
+        self.notifyCnt = 0
+        self.battery_lvl = 100
+        #self.timer = GObject.timeout_add(60000, self.drain_battery)
+
+    def notify_battery_level(self):
+        self.PropertiesChanged(bluetooth_constants.GATT_CHARACTERISTIC_INTERFACE, { 'Value': [dbus.Byte(self.battery_lvl)] }, [])
+        self.notifyCnt += 1
+        
+    def drain_battery(self):
+        if not self.notifying: return True
+        if(self.notifyCnt > 2): return False #Update battery level 3 times then stop
+        
+        if self.battery_lvl > 0:
+            self.battery_lvl -= 2
+            if self.battery_lvl < 5:
+                #self.battery_lvl = 0
+                GLib.source_remove(self.timer)
+                
+        print('Battery Level drained: ' + repr(self.battery_lvl))
+        self.notify_battery_level()
+        return True
+ 
+    def ReadValue(self, options):
+        print('Battery Level read: ' + repr(self.battery_lvl))
+        return [dbus.Byte(self.battery_lvl)]
+
+    def StartNotify(self):
+        print('Start Battery Notify')
+        
+        if self.notifying:
+            print('Already notifying, nothing to do')
+            return
+
+        self.notifying = True
+        print('Battery Notify 1')
+        self.timer = GLib.timeout_add(2000, self.drain_battery)
+        print('Battery Notify emd')
+
+    def StopNotify(self):
+        print('Stop Battery Notify')
+        
+        if not self.notifying:
+            print('Not notifying, nothing to do')
+            return
+
+        self.notifying = False
+class BatteryService(Service):
+    """
+    Fake Battery service that emulates a draining battery.
+
+    """
+    PATH_BASE = "/org/bluez/rcu/batt_service"
+    SERVICE_UUID = '180f'
+
+    def __init__(self, bus, index):
+        Service.__init__(self, bus, self.PATH_BASE, index, self.SERVICE_UUID, True)
+        self.add_characteristic(BatteryLevelCharacteristic(bus, 0, self))
 class RCUService(Service):
     """
     RCU service that provides characteristics and descriptors that
@@ -181,7 +372,6 @@ class RCUService(Service):
 
     def __init__(self, bus, index):
         Service.__init__(self, bus, self.RCU_PATH_BASE, index, self.RCU_SVC_UUID, True)
-        # self.add_characteristic(TestCharacteristic(bus, 0, self))
 
 
 class Application(dbus.service.Object):
@@ -193,8 +383,8 @@ class Application(dbus.service.Object):
         self.path = '/'
         self.services = []
         dbus.service.Object.__init__(self, bus, self.path)
-        # Todo:add our services by self.add_service(..)
-        self.add_service(RCUService(bus, 0))
+        self.add_service(BatteryService(bus, 0))
+        #self.add_service(RCUService(bus, 0))
 
     def get_path(self):
         return dbus.ObjectPath(self.path)
