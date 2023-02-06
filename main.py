@@ -248,8 +248,8 @@ class Service(dbus.service.Object):
     # The constructor also requires a DBus bus object, a UUID with which GATT clients can identify
     # the type of GATT service represented and an indicator of whether it is a primary or
     # secondary service.
-    def __init__(self, bus, path_base, index, uuid, primary):
-        self.path = path_base + str(index)
+    def __init__(self, bus, path_base, uuid, primary):
+        self.path = path_base
         self.bus = bus
         self.uuid = uuid
         self.primary = primary
@@ -359,9 +359,96 @@ class BatteryService(Service):
     PATH_BASE = "/org/bluez/rcu/batt_service"
     SERVICE_UUID = '180f'
 
-    def __init__(self, bus, index):
-        Service.__init__(self, bus, self.PATH_BASE, index, self.SERVICE_UUID, True)
+    def __init__(self, bus):
+        Service.__init__(self, bus, self.PATH_BASE, self.SERVICE_UUID, True)
         self.add_characteristic(BatteryLevelCharacteristic(bus, 0, self))
+
+"""
+The Manufacturer Name String characteristic shall represent the name of the
+manufacturer of the device.
+
+Characteristic Behavior:
+The Manufacturer Name String characteristic returns its value when read using the
+GATT Characteristic Value Read procedure.
+"""
+class ManufacturerNameCharacteristic(Characteristic):
+    CHARACTERISTIC_UUID = '2A29'
+    MANUFACTURER_NAME = 'Fake RCU Manufacturer Name'
+
+    def __init__(self, bus, index, service):
+        Characteristic.__init__(
+                self, bus, index,
+                self.CHARACTERISTIC_UUID,
+                ["read"],
+                service)
+        self.value = dbus.Array(self.MANUFACTURER_NAME.encode(), signature=dbus.Signature('y'))
+
+    def ReadValue(self, options):
+        print(f'Read RCU Manufacturer Name : {self.value}')
+        return self.value
+
+"""
+The Model Number String characteristic shall represent the model number that is
+assigned by the device vendor.
+
+Characteristic Behavior:
+The Model Number String characteristic returns its value when read using the GATT
+Characteristic Value Read procedure.
+"""
+class ModelNumberCharacteristic(Characteristic):
+
+    CHARACTERISTIC_UUID = '2A24'
+    MODEL_NUMBER = 'FAKE_RCU_01'
+
+    def __init__(self, bus, index, service):
+        Characteristic.__init__(
+                self, bus, index,
+                self.CHARACTERISTIC_UUID,
+                ["read"],
+                service)
+        self.value = dbus.Array(self.MODEL_NUMBER.encode(), signature=dbus.Signature('y'))
+
+    def ReadValue(self, options):
+        print(f'Read ModelNumberCharacteristic: {self.value}')
+        return self.value
+
+"""
+The Software Revision String characteristic shall represent the software revision for the
+software within the device.
+
+Characteristic Behavior:
+The Software Revision String characteristic returns its value when read using the GATT
+Characteristic Value Read procedure.
+"""
+class VersionCharacteristic(Characteristic):
+
+    CHARACTERISTIC_UUID = '2A28'
+    VERSION_NUMBER = '1.0.0'
+
+    def __init__(self, bus, index, service):
+        Characteristic.__init__(
+                self, bus, index,
+                self.CHARACTERISTIC_UUID,
+                ["read"],
+                service)
+        
+        self.value = dbus.Array(self.VERSION_NUMBER.encode(), signature=dbus.Signature('y'))
+
+    def ReadValue(self, options):
+        print(f'Read VersionCharacteristic: {self.value}')
+        return self.value
+
+class DeviceInfoService(Service):
+
+    SERVICE_UUID = '180A'
+    PATH_BASE = "/org/bluez/rcu/device_info_service"
+
+    def __init__(self, bus):
+        Service.__init__(self, bus, self.PATH_BASE, self.SERVICE_UUID, True)
+        self.add_characteristic(ManufacturerNameCharacteristic(bus, 0, self))
+        self.add_characteristic(ModelNumberCharacteristic(bus, 1, self))
+        self.add_characteristic(VersionCharacteristic(bus, 2, self))
+
 class RCUService(Service):
     """
     RCU service that provides characteristics and descriptors that
@@ -370,8 +457,8 @@ class RCUService(Service):
     RCU_PATH_BASE = "/org/bluez/rcu/gatt_service"
     RCU_SVC_UUID = '12345678-1234-5678-1234-56789abcdef0'
 
-    def __init__(self, bus, index):
-        Service.__init__(self, bus, self.RCU_PATH_BASE, index, self.RCU_SVC_UUID, True)
+    def __init__(self, bus):
+        Service.__init__(self, bus, self.RCU_PATH_BASE, self.RCU_SVC_UUID, True)
 
 
 class Application(dbus.service.Object):
@@ -383,8 +470,8 @@ class Application(dbus.service.Object):
         self.path = '/'
         self.services = []
         dbus.service.Object.__init__(self, bus, self.path)
-        self.add_service(BatteryService(bus, 0))
-        #self.add_service(RCUService(bus, 0))
+        self.add_service(BatteryService(bus))
+        self.add_service(DeviceInfoService(bus))
 
     def get_path(self):
         return dbus.ObjectPath(self.path)
