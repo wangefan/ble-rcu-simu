@@ -6,6 +6,7 @@ import dbus
 import dbus.exceptions
 import dbus.service
 from Advertise import RCUAdvertisement
+from agent import Agent
 from ble_hogp import DeviceInfoService, BatteryService, HIDService
 
 g_mainloop = None
@@ -168,7 +169,14 @@ def main():
     adapter_props.Set(bluetooth_constants.ADAPTER_INTERFACE,
                       bluetooth_constants.ADAPTER_PROP_POWER, dbus.Boolean(1))
 
-    print("2. Advertise procedure")
+    print("2. Agent procedure")
+    AGENT_PATH = "/org/bluez/rcu/agent"
+    agent = Agent(bus, AGENT_PATH)
+    agent_manager = dbus.Interface(bus.get_object(bluetooth_constants.BLUEZ_SERVICE_NAME, '/org/bluez'),
+                                   bluetooth_constants.AGENT_MANAGER_INTERFACE)
+    agent_manager.RegisterAgent(AGENT_PATH, "NoInputNoOutput")
+
+    print("3. Advertise procedure")
     global g_ad_manager
     g_ad_manager = dbus.Interface(bus.get_object(
         bluetooth_constants.BLUEZ_SERVICE_NAME, adapter_obj), bluetooth_constants.ADVERTISING_MANAGER_INTERFACE)
@@ -176,7 +184,7 @@ def main():
     g_rcu_advertisement = RCUAdvertisement(bus, 0)
     start_advertising()
 
-    print('3. Registering GATT procedure')
+    print('4. Registering GATT procedure')
     gatt_service_manager = dbus.Interface(
         bus.get_object(bluetooth_constants.BLUEZ_SERVICE_NAME, adapter_obj),
         bluetooth_constants.GATT_MANAGER_INTERFACE)
