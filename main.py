@@ -6,7 +6,7 @@ import dbus
 import dbus.exceptions
 import dbus.service
 from Advertise import RCUAdvertisement
-from ble_hogp import DeviceInfoService, BatteryService
+from ble_hogp import DeviceInfoService, BatteryService, HIDService
 
 g_mainloop = None
 g_ad_manager = None 
@@ -20,8 +20,6 @@ def register_ad_cb():
 def register_ad_error_cb(error):
     print("2. Failed to register RCUAdvertisement: " + str(error))
     g_mainloop.quit()
-
-
 
 """
 class RCUService(Service):
@@ -45,8 +43,9 @@ class Application(dbus.service.Object):
         self.path = '/'
         self.services = []
         dbus.service.Object.__init__(self, bus, self.path)
-        self.add_service(BatteryService(bus))
+        self.add_service(HIDService(bus))
         self.add_service(DeviceInfoService(bus))
+        self.add_service(BatteryService(bus))
 
     def get_path(self):
         return dbus.ObjectPath(self.path)

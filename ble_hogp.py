@@ -162,3 +162,334 @@ class DeviceInfoService(Service):
         self.add_characteristic(ManufacturerNameCharacteristic(bus, 0, self))
         self.add_characteristic(ModelNumberCharacteristic(bus, 1, self))
         self.add_characteristic(VersionCharacteristic(bus, 2, self))
+
+class ProtocolModeCharacteristic(Characteristic):
+    CHARACTERISTIC_UUID = '2A4E'
+
+    def __init__(self, bus, index, service):
+        
+        Characteristic.__init__(
+                self, bus, index,
+                self.CHARACTERISTIC_UUID,
+                ["read", "write-without-response"],
+                service)
+        
+        self.parent = service
+        self.value = dbus.Array(bytearray.fromhex('01'), signature=dbus.Signature('y'))
+
+    def ReadValue(self, options):
+        print(f'Read ProtocolMode: {self.value}')
+        return self.value
+
+    def WriteValue(self, value, options):
+        print(f'Write ProtocolMode {value}')
+        self.value = value
+
+
+class HIDInfoCharacteristic(Characteristic):
+
+    CHARACTERISTIC_UUID = '2A4A'
+    HIDInfo = 'My HID'
+
+    def __init__(self, bus, index, service):
+        Characteristic.__init__(
+            self, bus, index,
+            self.CHARACTERISTIC_UUID,
+            ['read'],
+            service)
+        #self.value = dbus.Array(self.HIDInfo.encode(),
+        #                        signature=dbus.Signature('y'))
+        self.value = dbus.Array(bytearray.fromhex('01010002'), signature=dbus.Signature('y'))
+        print(f'HIDInfoCharacteristic init end: {self.value}')
+
+    def ReadValue(self, options):
+        print(f'Read HIDInformation: {self.value}')
+        return self.value
+
+class ControlPointCharacteristic(Characteristic):
+
+    CHARACTERISTIC_UUID = '2A4C'
+
+    def __init__(self, bus, index, service):
+        Characteristic.__init__(
+                self, bus, index,
+                self.CHARACTERISTIC_UUID,
+                ["write-without-response"],
+                service)
+        
+        self.value = dbus.Array(bytearray.fromhex('00'), signature=dbus.Signature('y'))
+
+    def WriteValue(self, value, options):
+        print(f'Write ControlPoint {value}')
+        self.value = value
+
+class ReportMapCharacteristic(Characteristic):
+
+    CHARACTERISTIC_UUID = '2A4B'
+
+    def __init__(self, bus, index, service):
+        Characteristic.__init__(
+                self, bus, index,
+                self.CHARACTERISTIC_UUID,
+                ['read'],
+                service)
+        '''
+        <Field name="Report Map Value">
+            <Requirement>Mandatory</Requirement>
+            <Format>uint8</Format>
+            <Repeated>true</Repeated>
+        </Field>
+        
+        HID Report Descriptors https://www.usb.org/sites/default/files/documents/hid1_11.pdf
+        HID Report Parser https://eleccelerator.com/usbdescreqparser/
+        '''
+        
+        ##############################################################################################
+        # This Report Descriptor defines 2 Input Reports
+        # ReportMap designed by HeadHodge
+        #
+        # <Report Layouts>
+        #   <Report>
+        #       <ReportId>1</ReportId>
+        #       <Description>HID Keyboard Input</Description>
+        #       <Example>KeyCode capital 'M' = [dbus.Byte(0x02), dbus.Byte(0x10)]</Example>
+        #       <Field>
+        #           <Name>Keyboard Modifier</Name>
+        #           <Size>uint8</Size>
+        #           <Format>
+        #               <Bit0>Left CTRL Key Pressed</Bit0>
+        #               <Bit1>Left SHIFT Key Pressed</Bit1>
+        #               <Bit2>Left ALT Key Pressed</Bit2>
+        #               <Bit3>Left CMD(Window) Key Pressed</Bit3>
+        #               <Bit4>Right CTRL Key Pressed</Bit4>
+        #               <Bit5>Right SHIFT Key Pressed</Bit5>
+        #               <Bit6>Right ALT Key Pressed</Bit6>
+        #               <Bit7>Right CMD(Window) Key Pressed</Bit7>
+        #           </Format>
+        #       </Field>
+        #       <Field>
+        #           <Name>Keyboard Input KeyCode</Name>
+        #           <Size>uint8</Size>
+        #       </Field>
+        #   </Report>
+        #   <Report>
+        #       <ReportId>2</ReportId>
+        #       <Description>HID Consumer Input</Description>
+        #       <Example>KeyCode 'VolumeUp' = [dbus.Byte(0xe9), dbus.Byte(0x00)]</Example>
+        #       <Field>
+        #           <Name>Consumer Input KeyCode</Name>
+        #           <Size>uint16</Size>
+        #       </Field>
+        #   </Report>
+        # </Report Layouts>
+        ##############################################################################################
+  
+        #USB HID Report Descriptor
+        self.value = dbus.Array(bytearray.fromhex('05010906a1018501050719e029e71500250175019508810295017508150025650507190029658100c0050C0901A101850275109501150126ff0719012Aff078100C0'))
+        print(f'***ReportMap value***: {self.value}')
+
+    def ReadValue(self, options):
+        print(f'Read ReportMap: {self.value}')
+        return self.value
+
+class Report1ReferenceDescriptor(Descriptor):
+
+    DESCRIPTOR_UUID = '2908'
+
+    def __init__(self, bus, index, characteristic):
+        Descriptor.__init__(
+                self, bus, index,
+                self.DESCRIPTOR_UUID,
+                ['read'],
+                characteristic)
+                
+        '''
+        <Field name="Report ID">
+            <Requirement>Mandatory</Requirement>
+            <Format>uint8</Format>
+            <Minimum>0</Minimum>
+            <Maximum>255</Maximum>
+        </Field>
+        
+        <Field name="Report Type">
+            <Requirement>Mandatory</Requirement>
+            <Format>uint8</Format>
+            <Minimum>1</Minimum>
+            <Maximum>3</Maximum>
+            <Enumerations>
+                <Enumeration value="Input Report" key="1"/>
+                <Enumeration value="Output report" key="2"/>
+                <Enumeration value="Feature Report" key="3"/>
+                <ReservedForFutureUse start="4" end="255"/>
+                <ReservedForFutureUse1 start1="0" end1="0"/>
+            </Enumerations>
+        </Field>
+        '''
+       
+        # This report uses ReportId 1 as defined in the ReportMap characteristic
+        self.value = dbus.Array(bytearray.fromhex('0101'), signature=dbus.Signature('y'))
+        print(f'***ReportReference***: {self.value}')
+
+    def ReadValue(self, options):
+        print(f'Read ReportReference: {self.value}')
+        return self.value
+
+class Report1Characteristic(Characteristic):
+
+    CHARACTERISTIC_UUID = '2A4D'
+
+    def __init__(self, bus, index, service):
+        Characteristic.__init__(
+                self, bus, index,
+                self.CHARACTERISTIC_UUID,
+                ['secure-read', 'notify'],
+                service)
+                
+        '''
+        <Field name="Report Value">
+        <Requirement>Mandatory</Requirement>
+        <Format>uint8</Format>
+        <Repeated>true</Repeated>
+        </Field>
+        
+        Use standard key codes: https://www.usb.org/sites/default/files/documents/hut1_12v2.pdf
+        '''
+        
+        self.add_descriptor(Report1ReferenceDescriptor(bus, 1, self))
+        
+        self.value = [dbus.Byte(0x00),dbus.Byte(0x00)]
+        print(f'***Report value***: {self.value}')
+        
+    def send(self):
+
+        #send keyCode: 'M'
+        print(f'***send keyCode: "M"***');
+        self.PropertiesChanged(bluetooth_constants.GATT_CHARACTERISTIC_INTERFACE, { 'Value': [dbus.Byte(0x02),dbus.Byte(0x10)] }, [])
+        self.PropertiesChanged(bluetooth_constants.GATT_CHARACTERISTIC_INTERFACE, { 'Value': [dbus.Byte(0x00),dbus.Byte(0x00)] }, [])
+        print(f'***sent***')
+        return True
+                
+    def ReadValue(self, options):
+        print(f'Read Report: {self.value}')
+        return self.value
+
+    def WriteValue(self, value, options):
+        print(f'Write Report {self.value}')
+        self.value = value
+
+    def StartNotify(self):
+        print(f'Start Start Report Keyboard Input')
+        self.timer = GLib.timeout_add(10000, self.send)
+        print(f'Start Start Report Keyboard Input end')
+
+    def StopNotify(self):
+        print(f'Stop Report Keyboard Input')
+
+class Report2ReferenceDescriptor(Descriptor):
+
+    DESCRIPTOR_UUID = '2908'
+
+    def __init__(self, bus, index, characteristic):
+        Descriptor.__init__(
+                self, bus, index,
+                self.DESCRIPTOR_UUID,
+                ['read'],
+                characteristic)
+                
+        '''
+        <Field name="Report ID">
+            <Requirement>Mandatory</Requirement>
+            <Format>uint8</Format>
+            <Minimum>0</Minimum>
+            <Maximum>255</Maximum>
+        </Field>
+        
+        <Field name="Report Type">
+            <Requirement>Mandatory</Requirement>
+            <Format>uint8</Format>
+            <Minimum>1</Minimum>
+            <Maximum>3</Maximum>
+            <Enumerations>
+                <Enumeration value="Input Report" key="1"/>
+                <Enumeration value="Output report" key="2"/>
+                <Enumeration value="Feature Report" key="3"/>
+                <ReservedForFutureUse start="4" end="255"/>
+                <ReservedForFutureUse1 start1="0" end1="0"/>
+            </Enumerations>
+        </Field>
+        '''
+        
+        # This report uses ReportId 2 as defined in the ReportMap characteristic
+        self.value = dbus.Array(bytearray.fromhex('0201'), signature=dbus.Signature('y'))
+        print(f'***ReportReference***: {self.value}')
+
+    def ReadValue(self, options):
+        print(f'Read ReportReference: {self.value}')
+        return self.value
+
+class Report2Characteristic(Characteristic):
+
+    CHARACTERISTIC_UUID = '2A4D'
+
+    def __init__(self, bus, index, service):
+        Characteristic.__init__(
+                self, bus, index,
+                self.CHARACTERISTIC_UUID,
+                ['secure-read', 'notify'],
+                service)
+                
+        '''
+        <Field name="Report Value">
+        <Requirement>Mandatory</Requirement>
+        <Format>uint8</Format>
+        <Repeated>true</Repeated>
+        </Field>
+        
+        Use standard key codes: https://www.usb.org/sites/default/files/documents/hut1_12v2.pdf
+        '''
+        
+        self.add_descriptor(Report2ReferenceDescriptor(bus, 1, self))
+        
+        self.value = [dbus.Byte(0x00),dbus.Byte(0x00)]
+        print(f'***Report value***: {self.value}')
+        
+    def send(self):
+
+        #send keyCode: 'VolumeUp'
+        print(f'***send keyCode: "VolumeUp"***');
+        self.PropertiesChanged(bluetooth_constants.GATT_CHARACTERISTIC_INTERFACE, { 'Value': [dbus.Byte(0xe9), dbus.Byte(0x00)] }, [])
+        self.PropertiesChanged(bluetooth_constants.GATT_CHARACTERISTIC_INTERFACE, { 'Value': [dbus.Byte(0x00), dbus.Byte(0x00)] }, [])
+        print(f'***sent***')
+        return True
+                
+    def ReadValue(self, options):
+        print(f'Read Report: {self.value}')
+        return self.value
+
+    def WriteValue(self, value, options):
+        print(f'Write Report {self.value}')
+        self.value = value
+
+    def StartNotify(self):
+        print(f'Start Report Consumer Input')
+        self.timer = GLib.timeout_add(15000, self.send)
+        print(f'Start Report Consumer Input end')
+
+    def StopNotify(self):
+        print(f'Stop Start Report Consumer Input')
+
+class HIDService(Service):
+    SERVICE_UUID = '1812'
+    PATH_BASE = "/org/bluez/rcu/hid_service"
+   
+    def __init__(self, bus):
+        Service.__init__(self, bus, self.PATH_BASE, self.SERVICE_UUID, True)
+        
+        self.add_characteristic(HIDInfoCharacteristic(bus, 0, self))
+        self.add_characteristic(ProtocolModeCharacteristic(bus, 1, self))
+        self.add_characteristic(ControlPointCharacteristic(bus, 2, self))
+        self.add_characteristic(ReportMapCharacteristic(bus, 3, self))
+        self.kr = Report1Characteristic(bus, 4, self)
+        self.add_characteristic(self.kr)
+        self.add_characteristic(Report2Characteristic(bus, 5, self))
+        self.kr.StartNotify
