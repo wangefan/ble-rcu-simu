@@ -7,4 +7,6 @@ Todo:
 
 ## How to use
 
-Todo:
+Todo: 
+
+## Steps
