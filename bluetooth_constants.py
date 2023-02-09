@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+BLUEZ_OBJ_ROOT = "/org/bluez/rcu/"
 ADAPTER_NAME = "hci0"
 
 BLUEZ_SERVICE_NAME = "org.bluez"

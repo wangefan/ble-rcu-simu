@@ -170,7 +170,7 @@ def main():
                       bluetooth_constants.ADAPTER_PROP_POWER, dbus.Boolean(1))
 
     print("2. Agent procedure")
-    AGENT_PATH = "/org/bluez/rcu/agent"
+    AGENT_PATH = bluetooth_constants.BLUEZ_OBJ_ROOT + "agent"
     agent = Agent(bus, AGENT_PATH)
     agent_manager = dbus.Interface(bus.get_object(bluetooth_constants.BLUEZ_SERVICE_NAME, '/org/bluez'),
                                    bluetooth_constants.AGENT_MANAGER_INTERFACE)

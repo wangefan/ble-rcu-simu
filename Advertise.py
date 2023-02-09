@@ -87,7 +87,7 @@ class Advertisement(dbus.service.Object):
         print("%s: Released!" % self.path)
 
 class RCUAdvertisement(Advertisement):
-    BASE_PATH = "/org/bluez/rcu/advertisement"
+    BASE_PATH = bluetooth_constants.BLUEZ_OBJ_ROOT + "advertisement"
     def __init__(self, bus, index):
         Advertisement.__init__(self, bus, self.BASE_PATH, index, "peripheral")
         self.add_service_uuid('1812')

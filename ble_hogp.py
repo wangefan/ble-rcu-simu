@@ -70,7 +70,7 @@ class BatteryService(Service):
     Fake Battery service that emulates a draining battery.
 
     """
-    PATH_BASE = "/org/bluez/rcu/batt_service"
+    PATH_BASE = bluetooth_constants.BLUEZ_OBJ_ROOT + "batt_service"
     SERVICE_UUID = '180f'
 
     def __init__(self, bus):
@@ -155,7 +155,7 @@ class VersionCharacteristic(Characteristic):
 class DeviceInfoService(Service):
 
     SERVICE_UUID = '180A'
-    PATH_BASE = "/org/bluez/rcu/device_info_service"
+    PATH_BASE = bluetooth_constants.BLUEZ_OBJ_ROOT + "device_info_service"
 
     def __init__(self, bus):
         Service.__init__(self, bus, self.PATH_BASE, self.SERVICE_UUID, True)
@@ -477,7 +477,7 @@ class Report2Characteristic(Characteristic):
 
 class HIDService(Service):
     SERVICE_UUID = '1812'
-    PATH_BASE = "/org/bluez/rcu/hid_service"
+    PATH_BASE = bluetooth_constants.BLUEZ_OBJ_ROOT + "hid_service"
    
     def __init__(self, bus):
         Service.__init__(self, bus, self.PATH_BASE, self.SERVICE_UUID, True)
