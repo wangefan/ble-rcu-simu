@@ -331,7 +331,7 @@ class Report1ReferenceDescriptor(Descriptor):
         self.value = dbus.Array(bytearray.fromhex('0101'), signature=dbus.Signature('y'))
 
     def ReadValue(self, options):
-        print(f'Read ReportReference: {self.value}')
+        print(f'Report1ReferenceDescriptor, Read ReportReference: {self.value}')
         return self.value
 
 class Report1Characteristic(Characteristic):
