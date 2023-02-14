@@ -4,6 +4,84 @@ import bluetooth_constants
 from gi.repository import GLib
 from ble_base import Descriptor, Characteristic, Service
 
+REPORT_MAP = bytes((
+    # Standard keyboard buttons
+    0x05, 0x01,       # Usage Page (Generic Desktop)
+    0x09, 0x07,       # Usage (Keyboard)
+    0xA1, 0x01,       # Collection (Application)
+    0x85, 0x01,  # Report ID (0x01)
+    0x75, 0x01,  # Report Size (1)
+    0x95, 0x08,  # Report Count (8)
+    0x05, 0x07,  # Usage Page (Key Codes)
+    0x19, 0xE0,  # Usage Minimum (224)
+    0x29, 0xE7,  # Usage Maximum (231)
+    0x15, 0x00,  # Logical Minimum (0)
+    0x25, 0x01,  # Logical Maximum (1)
+    0x81, 0x02,  # Input (Data, Variable, Absolute)
+    0x81, 0x01,  # Input (Constant) – Reserved byte
+    0x75, 0x01,  # Report Size (1)
+    0x95, 0x05,  # Report Count (5)
+    0x05, 0x08,  # Usage Page (LEDs)
+    0x19, 0x01,  # Usage Minimum (1)
+    0x29, 0x05,  # Usage Maximum (5)
+    0x91, 0x02,  # Output (Data, Variable, Absolute)
+    0x95, 0x03,  # Report Count (3)
+    0x91, 0x01,  # Output (Constant)
+    0x75, 0x08,  # Report Size (8)
+    0x95, 0x06,  # Report Count (6)
+    0x26, 0xFF, 0x00,  # Logical Maximum (255)
+    0x05, 0x07,  # Usage Page (Key Codes)
+    0x19, 0x00,  # Usage Minimum (0)
+    0x2A, 0xFF, 0x00,  # Usage Maximum (255)
+    0x81, 0x00,  # Input (Data, Array)
+    0xC0,        # End Collection
+    # Standard Consumer buttons
+    0x05, 0x0C,       # Usage Page (Consumer Devices)
+    0x09, 0x01,       # Usage (Consumer Control)
+    0xA1, 0x01,       # Collection (Application)
+    0x85, 0x0C,  # Report ID (0xOC)
+    0x19, 0x00,  # Usage Minimum (0)
+    0x2A, 0xFF, 0x03,  # Usage Maximum (0x03FF)
+    0x75, 0x10,  # Report Size (16)
+    0x95, 0x02,  # Report Count (2)
+    0x15, 0x00,  # Logical Minimum (0)
+    0x26, 0xFF, 0x03,  # Logical Maximum (0x03FF)
+    0x81, 0x00,  # Input (Data, Array)
+    0xC0,             # End collection
+    # Standard AV control buttons
+    0x05, 0x0C,       # Usage Page (Consumer Devices)
+    0x09, 0x01,       # Usage (Consumer Control)
+    0xA1, 0x01,       # Collection (Application)
+    0x85, 0x10,  # Report ID (0x10)
+    0x19, 0x00,  # Usage Minimum (0)
+    0x2A, 0xFF, 0x03,  # Usage Maximum (0x03FF)
+    0x75, 0x10,  # Report Size (16)
+    0x95, 0x02,  # Report Count (2)
+    0x15, 0x00,  # Logical Minimum (0)
+    0x26, 0xFF, 0x03,  # Logical Maximum (0x03FF)
+    0x81, 0x00,  # Input (Data, Array)
+    0xC0,                # End collection
+    0x06, 0xf0, 0xff, # Usage Page(0xFFF0, Vendor Specific 240)
+    0xa1, 0x01,       # Collection(Application)
+    0x85, 0xf4,       # Report ID(0xF4)
+    0x06, 0xf0, 0xff, # Usage Page(0xFFF0, Vendor Specific)
+    0x09, 0x03,       # Usage(0x03=Unpair from current remote)
+    0x75, 0x08,       # Report Size(8)
+    0x95, 0x01,       # Report Count(1)
+    0x15, 0x00,       # Logical Minimum(0)
+    0x26, 0xff, 0x00, # Logical Maximum(255)
+    0x91, 0x02,       # Output(Data, Variable, Absolute)
+    0x85, 0xf5,       # Report ID(0xF5)
+    0x06, 0xF0, 0xff, # Usage Page(0xFFF0, Vendor Specific)
+    0x09, 0x03,       # Usage(0x03=Unpair from current remote)
+    0x75, 0x08,       # Report Size(8)
+    0x95, 0x01,       # Report Count(1)
+    0x15, 0x00,       # Logical Minimum(0)
+    0x26, 0xff, 0x00, # Logical Maximum(255)
+    0x81, 0x02,       # Input(Data, Variable, Absolute)
+    0xc0, # End collection
+))
+
 class BatteryLevelCharacteristic(Characteristic):
     """
     Fake Battery Level characteristic. The battery level is drained by 2 points
@@ -286,8 +364,7 @@ class ReportMapCharacteristic(Characteristic):
   
         #USB HID Report Descriptor
         print(f'ReportMapCharacteristic, init')
-        self.value = dbus.Array(bytearray.fromhex('05010906a1018501050719e029e71500250175019508810295017508150025650507190029658100c0050C0901A101850275109501150126ff0719012Aff078100C0'))
-        
+        self.value = dbus.Array(REPORT_MAP)
 
     def ReadValue(self, options):
         print(f'ReportMapCharacteristic, Read ReportMap: {self.value}')
@@ -327,8 +404,8 @@ class Report1ReferenceDescriptor(Descriptor):
         </Field>
         '''
         print(f'Report1ReferenceDescriptor init')
-        # This report uses ReportId 1 as defined in the ReportMap characteristic
-        self.value = dbus.Array(bytearray.fromhex('0101'), signature=dbus.Signature('y'))
+        # This report uses ReportId 0x0c as defined in the ReportMap characteristic
+        self.value = dbus.Array(bytearray.fromhex('0C01'), signature=dbus.Signature('y'))
 
     def ReadValue(self, options):
         print(f'Report1ReferenceDescriptor, Read ReportReference: {self.value}')
@@ -357,15 +434,17 @@ class Report1Characteristic(Characteristic):
         print(f'Report1Characteristic init')
         self.add_descriptor(Report1ReferenceDescriptor(bus, 1, self))
         
-        self.value = [dbus.Byte(0x00),dbus.Byte(0x00)]
+        self.value = [dbus.Byte(0x00), dbus.Byte(
+            0x00), dbus.Byte(0x00), dbus.Byte(0x00)]
         
         
     def send(self):
-
-        #send keyCode: 'M'
-        print(f'Report1Characteristic, send keyCode: "M"***');
-        self.PropertiesChanged(bluetooth_constants.GATT_CHARACTERISTIC_INTERFACE, { 'Value': [dbus.Byte(0x02),dbus.Byte(0x10)] }, [])
-        self.PropertiesChanged(bluetooth_constants.GATT_CHARACTERISTIC_INTERFACE, { 'Value': [dbus.Byte(0x00),dbus.Byte(0x00)] }, [])
+        #send keyCode: 'left'
+        print(f'Report1Characteristic, send keyCode: "left"***');
+        self.PropertiesChanged(bluetooth_constants.GATT_CHARACTERISTIC_INTERFACE, {
+                               'Value': [dbus.Byte(0x44), dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00)]}, [])
+        self.PropertiesChanged(bluetooth_constants.GATT_CHARACTERISTIC_INTERFACE, {
+                               'Value': [dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00)]}, [])
         print(f'Report1Characteristic, sent')
         return True
                 
@@ -419,8 +498,8 @@ class Report2ReferenceDescriptor(Descriptor):
         </Field>
         '''
         print(f'Report2ReferenceDescriptor init')
-        # This report uses ReportId 2 as defined in the ReportMap characteristic
-        self.value = dbus.Array(bytearray.fromhex('0201'), signature=dbus.Signature('y'))
+        # This report uses ReportId 0x10 as defined in the ReportMap characteristic
+        self.value = dbus.Array(bytearray.fromhex('1001'), signature=dbus.Signature('y'))
 
     def ReadValue(self, options):
         print(f'Report2ReferenceDescriptor, Read ReportReference: {self.value}')
@@ -449,13 +528,16 @@ class Report2Characteristic(Characteristic):
         print(f'Report2Characteristic init')
         self.add_descriptor(Report2ReferenceDescriptor(bus, 1, self))
         
-        self.value = [dbus.Byte(0x00),dbus.Byte(0x00)]
+        self.value = [dbus.Byte(0x00), dbus.Byte(
+            0x00), dbus.Byte(0x00), dbus.Byte(0x00)]
         
     def send(self):
         #send keyCode: 'VolumeUp'
         print(f'Report2Characteristic, send keyCode: "VolumeUp"***')
-        self.PropertiesChanged(bluetooth_constants.GATT_CHARACTERISTIC_INTERFACE, { 'Value': [dbus.Byte(0xe9), dbus.Byte(0x00)] }, [])
-        self.PropertiesChanged(bluetooth_constants.GATT_CHARACTERISTIC_INTERFACE, { 'Value': [dbus.Byte(0x00), dbus.Byte(0x00)] }, [])
+        self.PropertiesChanged(bluetooth_constants.GATT_CHARACTERISTIC_INTERFACE, {
+                               'Value': [dbus.Byte(0xE9), dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00)]}, [])
+        self.PropertiesChanged(bluetooth_constants.GATT_CHARACTERISTIC_INTERFACE, {
+                               'Value': [dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00)]}, [])
         print(f'Report2Characteristic, sent')
         return True
                 
