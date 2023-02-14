@@ -411,7 +411,7 @@ class Report1ReferenceDescriptor(Descriptor):
         print(f'Report1ReferenceDescriptor, Read ReportReference: {self.value}')
         return self.value
 
-class Report1Characteristic(Characteristic):
+class ReportConsumerCharacteristic(Characteristic):
 
     CHARACTERISTIC_UUID = '2A4D'
 
@@ -431,38 +431,35 @@ class Report1Characteristic(Characteristic):
         
         Use standard key codes: https://www.usb.org/sites/default/files/documents/hut1_12v2.pdf
         '''
-        print(f'Report1Characteristic init')
+        print(f'ReportConsumerCharacteristic init')
         self.add_descriptor(Report1ReferenceDescriptor(bus, 1, self))
         
         self.value = [dbus.Byte(0x00), dbus.Byte(
             0x00), dbus.Byte(0x00), dbus.Byte(0x00)]
         
         
-    def send(self):
-        #send keyCode: 'left'
-        print(f'Report1Characteristic, send keyCode: "left"***');
+    def send(self, key_code):
+        print(f'ReportConsumerCharacteristic, send keyCode: {key_code}')
         self.PropertiesChanged(bluetooth_constants.GATT_CHARACTERISTIC_INTERFACE, {
-                               'Value': [dbus.Byte(0x44), dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00)]}, [])
+                               'Value': [dbus.Byte(key_code), dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00)]}, [])
         self.PropertiesChanged(bluetooth_constants.GATT_CHARACTERISTIC_INTERFACE, {
                                'Value': [dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00)]}, [])
-        print(f'Report1Characteristic, sent')
+        print(f'ReportConsumerCharacteristic, sent')
         return True
                 
     def ReadValue(self, options):
-        print(f'Report1Characteristic, Read Report: {self.value}')
+        print(f'ReportConsumerCharacteristic, Read Report: {self.value}')
         return self.value
 
     def WriteValue(self, value, options):
-        print(f'Report1Characteristic, Write Report {self.value}')
+        print(f'ReportConsumerCharacteristic, Write Report {self.value}')
         self.value = value
 
     def StartNotify(self):
-        print(f'Report1Characteristic, Start Start Report Keyboard Input')
-        self.timer = GLib.timeout_add(10000, self.send)
-        print(f'Report1Characteristic, Start Start Report Keyboard Input end')
+        print(f'ReportConsumerCharacteristic.StartNotify() called')
 
     def StopNotify(self):
-        print(f'Report1Characteristic, Stop Report Keyboard Input')
+        print(f'ReportConsumerCharacteristic.StopNotify() called')
 
 class Report2ReferenceDescriptor(Descriptor):
 
@@ -557,23 +554,49 @@ class Report2Characteristic(Characteristic):
     def StopNotify(self):
         print(f'Report2Characteristic, Stop Start Report Consumer Input')
 
+
+KEY_CODE = "key_code"
+KEY_REPORT_ID = "key_report_id"
+KEY_REPORT_ID_CONSUMER = 0x0C
+KEK_MAP = {
+    'left': {KEY_CODE: 0x44, KEY_REPORT_ID: KEY_REPORT_ID_CONSUMER},  # key left
+    'right': {KEY_CODE: 0x45, KEY_REPORT_ID: KEY_REPORT_ID_CONSUMER}, # key right
+    'up': {KEY_CODE: 0x42, KEY_REPORT_ID: KEY_REPORT_ID_CONSUMER},    # key up
+    'down': {KEY_CODE: 0x43, KEY_REPORT_ID: KEY_REPORT_ID_CONSUMER},  # key down
+    'help': {KEY_CODE: 0xe9, KEY_REPORT_ID: KEY_REPORT_ID_CONSUMER},  # key volume up
+    'f14': {KEY_CODE: 0xea, KEY_REPORT_ID: KEY_REPORT_ID_CONSUMER},   # key volume down
+}
+
+
 class HIDService(Service):
     SERVICE_UUID = '1812'
     PATH_BASE = bluetooth_constants.BLUEZ_OBJ_ROOT + "hid_service"
-   
+
+    class KeyEvent:
+        def __init__(self, key_code, key_category):
+            self.key_code = key_code
+            self.key_category = key_category
+
     def __init__(self, bus):
         Service.__init__(self, bus, self.PATH_BASE, self.SERVICE_UUID, True)
-        
+
         self.protocolMode = ProtocolModeCharacteristic(bus, 0, self)
         self.hidInfo = HIDInfoCharacteristic(bus, 1, self)
         self.controlPoint = ControlPointCharacteristic(bus, 2, self)
         self.reportMap = ReportMapCharacteristic(bus, 3, self)
-        self.report1 = Report1Characteristic(bus, 4, self)
-        self.report2 = Report2Characteristic(bus, 5, self)
-        
+        self.reportConsumer = ReportConsumerCharacteristic(bus, 4, self)
+        # self.report2 = Report2Characteristic(bus, 5, self)
+
         self.add_characteristic(self.protocolMode)
         self.add_characteristic(self.hidInfo)
         self.add_characteristic(self.controlPoint)
         self.add_characteristic(self.reportMap)
-        self.add_characteristic(self.report1)
-        self.add_characteristic(self.report2)
+        self.add_characteristic(self.reportConsumer)
+        # self.add_characteristic(self.report2)
+
+    def onKeyEvent(self, key_event):
+        key_info = KEK_MAP.get(key_event.name)
+        print(f'key_info:{key_info}')
+        if key_info != None:
+            if key_info[KEY_REPORT_ID] == KEY_REPORT_ID_CONSUMER:
+                self.reportConsumer.send(key_info[KEY_CODE])

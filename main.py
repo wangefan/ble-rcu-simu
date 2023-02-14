@@ -8,19 +8,23 @@ import dbus.service
 from Advertise import RCUAdvertisement
 from agent import Agent
 from ble_hogp import DeviceInfoService, BatteryService, HIDService
+from key_event_monitor import KeyEventMonitor
 
 g_mainloop = None
+g_is_advertising = False
 g_ad_manager = None 
 g_rcu_advertisement = None
+g_application = None
 
 
 def register_ad_cb():
-    print("Registered RCUAdvertisement " + g_rcu_advertisement.get_path() + ", instruct controller to start advertising", )
-
+    g_is_advertising = True
+    print("Registered RCUAdvertisement " + g_rcu_advertisement.get_path() + ", instruct controller to start advertising.. (press q to exit process)", )
 
 def register_ad_error_cb(error):
-    print("2. Failed to register RCUAdvertisement: " + str(error))
-    g_mainloop.quit()
+    g_is_advertising = False
+    print("Failed to register RCUAdvertisement: " + str(error))
+    closeAll()
 
 """
 class RCUService(Service):
@@ -44,9 +48,14 @@ class Application(dbus.service.Object):
         self.path = '/'
         self.services = []
         dbus.service.Object.__init__(self, bus, self.path)
-        self.add_service(HIDService(bus))
+        self.hid_service = HIDService(bus)
+        self.add_service(self.hid_service)
         self.add_service(DeviceInfoService(bus))
         self.add_service(BatteryService(bus))
+
+        self.connected = False
+        self.KeyEventMonitor = KeyEventMonitor(self.onKeyEvent, self.onExit)
+        self.KeyEventMonitor.start()
 
     def get_path(self):
         return dbus.ObjectPath(self.path)
@@ -74,20 +83,36 @@ class Application(dbus.service.Object):
 
         return response
 
+    def set_connected(self, connected):
+        self.connected = connected
+
+    def onExit(self):
+        closeAll()
+
+    def onKeyEvent(self, key_event):
+        if self.connected:
+            print(
+                f'\rApplication.onKeyEvent(key_event): key_event = {key_event}\r')
+            self.hid_service.onKeyEvent(key_event)
+        else:
+            pass
 
 def register_app_cb():
-    print('Registered GATT application')
+    print('4. Registered GATT application ok')
 
 
 def register_app_error_cb(error):
-    print('Failed to register GATT application: ' + str(error))
-    g_mainloop.quit()
+    print('4. Failed to register GATT application: ' + str(error))
+    closeAll()
 
 def set_connected_status(status):
+    global g_application
     if (status == 1):
+        g_application.set_connected(True)
         print("connected")
         stop_advertising()
     else:
+        g_application.set_connected(False)
         print("disconnected")
         start_advertising()
 
@@ -129,19 +154,27 @@ def find_adapter(bus):
 def start_advertising():
     global g_ad_manager 
     global g_rcu_advertisement
-    # This causes BlueZ to instruct the controller to start advertising
-    g_ad_manager.RegisterAdvertisement(
-        g_rcu_advertisement.get_path(),
-        {},
-        reply_handler=register_ad_cb,
-        error_handler=register_ad_error_cb,
-    )
+    if g_is_advertising == False:
+        # This causes BlueZ to instruct the controller to start advertising
+        g_ad_manager.RegisterAdvertisement(
+            g_rcu_advertisement.get_path(),
+            {},
+            reply_handler=register_ad_cb,
+            error_handler=register_ad_error_cb,
+        )
 
 def stop_advertising():
-    global g_ad_manager 
+    global g_ad_manager
     global g_rcu_advertisement
-    g_ad_manager.UnregisterAdvertisement(g_rcu_advertisement.get_path())
-    print("Unregistered RCUAdvertisement " + g_rcu_advertisement.get_path() + ", instruct controller to stop advertising")
+    if g_is_advertising:
+        g_ad_manager.UnregisterAdvertisement(g_rcu_advertisement.get_path())
+        print("Unregistered RCUAdvertisement " + g_rcu_advertisement.get_path() + ", instruct controller to stop advertising")
+
+def closeAll():
+    stop_advertising()
+    global g_mainloop
+    if g_mainloop != None:
+        g_mainloop.quit()
 
 def main():
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
@@ -189,14 +222,16 @@ def main():
         bus.get_object(bluetooth_constants.BLUEZ_SERVICE_NAME, adapter_obj),
         bluetooth_constants.GATT_MANAGER_INTERFACE)
 
-    app = Application(bus)
-    gatt_service_manager.RegisterApplication(app.get_path(), {},
+    global g_application
+    g_application = Application(bus)
+    gatt_service_manager.RegisterApplication(g_application.get_path(), {},
                                              reply_handler=register_app_cb,
                                              error_handler=register_app_error_cb)
 
     global g_mainloop
     g_mainloop = GLib.MainLoop()
     g_mainloop.run()
+    print('5. Process end')
 
 
 if __name__ == "__main__":
