@@ -99,15 +99,15 @@ class BatteryLevelCharacteristic(Characteristic):
         self.notifying = False
         self.notifyCnt = 0
         self.battery_lvl = 100
-        #self.timer = GObject.timeout_add(60000, self.drain_battery)
 
     def notify_battery_level(self):
-        self.PropertiesChanged(bluetooth_constants.GATT_CHARACTERISTIC_INTERFACE, { 'Value': [dbus.Byte(self.battery_lvl)] }, [])
+        self.PropertiesChanged(bluetooth_constants.GATT_CHARACTERISTIC_INTERFACE, {
+                               'Value': [dbus.Byte(self.battery_lvl)]}, [])
         self.notifyCnt += 1
         
     def drain_battery(self):
         if not self.notifying: return True
-        if(self.notifyCnt > 2): return False #Update battery level 3 times then stop
+        if(self.notifyCnt > 1): return False #Update battery level 2 times then stop
         
         if self.battery_lvl > 0:
             self.battery_lvl -= 2
@@ -115,7 +115,7 @@ class BatteryLevelCharacteristic(Characteristic):
                 #self.battery_lvl = 0
                 GLib.source_remove(self.timer)
                 
-        print('Battery Level drained: ' + repr(self.battery_lvl))
+        print('BatteryLevelCharacteristic, battery Level drained: ' + repr(self.battery_lvl))
         self.notify_battery_level()
         return True
  
@@ -124,21 +124,20 @@ class BatteryLevelCharacteristic(Characteristic):
         return [dbus.Byte(self.battery_lvl)]
 
     def StartNotify(self):
-        print('Start Battery Notify')
+        print('BatteryLevelCharacteristic StartNotify')
         
         if self.notifying:
-            print('Already notifying, nothing to do')
+            print('BatteryLevelCharacteristic already notifying, nothing to do')
             return
 
         self.notifying = True
-        print('Battery Notify 1')
-        self.timer = GLib.timeout_add(2000, self.drain_battery)
+        self.timer = GLib.timeout_add(1000, self.drain_battery)
 
     def StopNotify(self):
-        print('Stop Battery Notify')
+        print('BatteryLevelCharacteristic StopNotify')
         
         if not self.notifying:
-            print('Not notifying, nothing to do')
+            print('BatteryLevelCharacteristic not notifying, nothing to do')
             return
 
         self.notifying = False
