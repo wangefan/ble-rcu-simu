@@ -18,10 +18,12 @@ g_application = None
 
 
 def register_ad_cb():
+    global g_is_advertising
     g_is_advertising = True
     print("Registered RCUAdvertisement " + g_rcu_advertisement.get_path() + ", instruct controller to start advertising.. (press q to exit process)", )
 
 def register_ad_error_cb(error):
+    global g_is_advertising
     g_is_advertising = False
     print("Failed to register RCUAdvertisement: " + str(error))
     closeAll()
@@ -91,8 +93,6 @@ class Application(dbus.service.Object):
 
     def onKeyEvent(self, key_event):
         if self.connected:
-            print(
-                f'\rApplication.onKeyEvent(key_event): key_event = {key_event}\r')
             self.hid_service.onKeyEvent(key_event)
         else:
             pass
@@ -154,6 +154,7 @@ def find_adapter(bus):
 def start_advertising():
     global g_ad_manager 
     global g_rcu_advertisement
+    global g_is_advertising
     if g_is_advertising == False:
         # This causes BlueZ to instruct the controller to start advertising
         g_ad_manager.RegisterAdvertisement(
@@ -166,9 +167,11 @@ def start_advertising():
 def stop_advertising():
     global g_ad_manager
     global g_rcu_advertisement
+    global g_is_advertising
     if g_is_advertising:
         g_ad_manager.UnregisterAdvertisement(g_rcu_advertisement.get_path())
         print("Unregistered RCUAdvertisement " + g_rcu_advertisement.get_path() + ", instruct controller to stop advertising")
+        g_is_advertising = False
 
 def closeAll():
     stop_advertising()
