@@ -201,6 +201,10 @@ def main():
         bluetooth_constants.BLUEZ_SERVICE_NAME, adapter_obj), bluetooth_constants.DBUS_PROPERTIES)
     adapter_props.Set(bluetooth_constants.ADAPTER_INTERFACE,
                       bluetooth_constants.ADAPTER_PROP_POWER, dbus.Boolean(1))
+    adapter_props.Set(bluetooth_constants.ADAPTER_INTERFACE,
+                      bluetooth_constants.ADAPTER_PROP_DISCOVERABLE, dbus.Boolean(1))
+    adapter_props.Set(bluetooth_constants.ADAPTER_INTERFACE,
+                      bluetooth_constants.ADAPTER_PROP_PAIRABLE, dbus.Boolean(1))
 
     print("2. Agent procedure")
     AGENT_PATH = bluetooth_constants.BLUEZ_OBJ_ROOT + "agent"
