@@ -588,7 +588,7 @@ class HIDService(Service):
 
     def onKeyEvent(self, key_event):
         key_info = KEK_MAP.get(key_event.name)
-        print(f'key_info:{key_info}')
+        #print(f'key_info:{key_info}')
         if key_info != None:
             if key_info[KEY_REPORT_ID] == KEY_REPORT_ID_CONSUMER:
                 self.reportConsumer.send(key_info[KEY_CODE])

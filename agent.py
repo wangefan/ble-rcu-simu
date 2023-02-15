@@ -34,10 +34,10 @@ class Agent(dbus.service.Object):
                          in_signature="os", out_signature="")
     def AuthorizeService(self, device, uuid):
         print("AuthorizeService (%s, %s)" % (device, uuid))
-        authorize = ask("Authorize connection (yes/no): ")
-        if (authorize == "yes"):
-            return
-        raise bluetooth_exceptions.Rejected("Connection rejected by user")
+        #authorize = ask("Authorize connection (yes/no): ")
+        #if (authorize == "yes"):
+        #    return
+        #raise bluetooth_exceptions.Rejected("Connection rejected by user")
 
     @dbus.service.method(bluetooth_constants.AGENT_INTERFACE,
                          in_signature="o", out_signature="s")
@@ -79,10 +79,10 @@ class Agent(dbus.service.Object):
                          in_signature="o", out_signature="")
     def RequestAuthorization(self, device):
         print("RequestAuthorization (%s)" % (device))
-        auth = ask("Authorize? (yes/no): ")
-        if (auth == "yes"):
-            return
-        raise bluetooth_exceptions.Rejected("Pairing rejected")
+        #auth = ask("Authorize? (yes/no): ")
+        #if (auth == "yes"):
+        #    return
+        #raise bluetooth_exceptions.Rejected("Pairing rejected")
 
     @dbus.service.method(bluetooth_constants.AGENT_INTERFACE,
                          in_signature="", out_signature="")
