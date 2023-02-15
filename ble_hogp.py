@@ -133,7 +133,6 @@ class BatteryLevelCharacteristic(Characteristic):
         self.notifying = True
         print('Battery Notify 1')
         self.timer = GLib.timeout_add(2000, self.drain_battery)
-        print('Battery Notify emd')
 
     def StopNotify(self):
         print('Stop Battery Notify')
@@ -277,7 +276,6 @@ class HIDInfoCharacteristic(Characteristic):
             service)
         #self.value = dbus.Array(self.HIDInfo.encode(),
         #                        signature=dbus.Signature('y'))
-        print(f'HIDInfoCharacteristic init')
         self.value = dbus.Array(bytearray.fromhex('01010002'), signature=dbus.Signature('y'))
 
     def ReadValue(self, options):
@@ -363,7 +361,6 @@ class ReportMapCharacteristic(Characteristic):
         ##############################################################################################
   
         #USB HID Report Descriptor
-        print(f'ReportMapCharacteristic, init')
         self.value = dbus.Array(REPORT_MAP)
 
     def ReadValue(self, options):
@@ -403,7 +400,6 @@ class Report1ReferenceDescriptor(Descriptor):
             </Enumerations>
         </Field>
         '''
-        print(f'Report1ReferenceDescriptor init')
         # This report uses ReportId 0x0c as defined in the ReportMap characteristic
         self.value = dbus.Array(bytearray.fromhex('0C01'), signature=dbus.Signature('y'))
 
@@ -431,7 +427,6 @@ class ReportConsumerCharacteristic(Characteristic):
         
         Use standard key codes: https://www.usb.org/sites/default/files/documents/hut1_12v2.pdf
         '''
-        print(f'ReportConsumerCharacteristic init')
         self.add_descriptor(Report1ReferenceDescriptor(bus, 1, self))
         
         self.value = [dbus.Byte(0x00), dbus.Byte(
@@ -494,7 +489,6 @@ class Report2ReferenceDescriptor(Descriptor):
             </Enumerations>
         </Field>
         '''
-        print(f'Report2ReferenceDescriptor init')
         # This report uses ReportId 0x10 as defined in the ReportMap characteristic
         self.value = dbus.Array(bytearray.fromhex('1001'), signature=dbus.Signature('y'))
 
@@ -522,7 +516,6 @@ class Report2Characteristic(Characteristic):
         
         Use standard key codes: https://www.usb.org/sites/default/files/documents/hut1_12v2.pdf
         '''
-        print(f'Report2Characteristic init')
         self.add_descriptor(Report2ReferenceDescriptor(bus, 1, self))
         
         self.value = [dbus.Byte(0x00), dbus.Byte(
