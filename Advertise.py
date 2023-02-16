@@ -14,7 +14,6 @@ class Advertisement(dbus.service.Object):
         self.service_data = None
         self.local_name = None
         self.discoverable = False
-        self.pairable = False
         self.include_tx_power = None
         self.data = None
         dbus.service.Object.__init__(self, bus, self.path)
@@ -38,8 +37,6 @@ class Advertisement(dbus.service.Object):
             )
         if self.local_name is not None:
             properties["LocalName"] = dbus.String(self.local_name)
-        if self.pairable is not None:
-            properties['Pairable'] = dbus.Boolean(self.pairable)
         if self.discoverable is not None:
             properties['Discoverable'] = dbus.Boolean(self.discoverable)
         if self.include_tx_power is not None:
@@ -80,9 +77,6 @@ class Advertisement(dbus.service.Object):
     def add_discoverable(self, discoverable):
         self.discoverable = discoverable
 
-    def add_pairable(self, pairable):
-        self.pairable = pairable
-
     def add_data(self, ad_type, data):
         if not self.data:
             self.data = dbus.Dictionary({}, signature="yv")
@@ -111,5 +105,4 @@ class RCUAdvertisement(Advertisement):
 
         self.add_local_name("My_RCU")
         self.add_discoverable(True)
-        self.add_pairable(True)
         self.include_tx_power = True
