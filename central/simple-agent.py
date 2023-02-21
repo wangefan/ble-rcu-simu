@@ -103,9 +103,10 @@ class Agent(dbus.service.Object):
 					in_signature="o", out_signature="")
 	def RequestAuthorization(self, device):
 		print("RequestAuthorization (%s)" % (device))
-		auth = ask("Authorize? (yes/no): ")
-		if (auth == "yes"):
-			return
+		#auth = ask("Authorize? (yes/no): ")
+		#if (auth == "yes"):
+		#	return
+		return
 		raise Rejected("Pairing rejected")
 
 	@dbus.service.method(AGENT_INTERFACE,
