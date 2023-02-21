@@ -36,7 +36,7 @@ class Agent(dbus.service.Object):
         print("AuthorizeService (%s, %s)" % (device, uuid))
         #authorize = ask("Authorize connection (yes/no): ")
         #if (authorize == "yes"):
-        #    return
+        return
         #raise bluetooth_exceptions.Rejected("Connection rejected by user")
 
     @dbus.service.method(bluetooth_constants.AGENT_INTERFACE,
@@ -69,11 +69,11 @@ class Agent(dbus.service.Object):
                          in_signature="ou", out_signature="")
     def RequestConfirmation(self, device, passkey):
         print("RequestConfirmation (%s, %06d)" % (device, passkey))
-        confirm = ask("Confirm passkey (yes/no): ")
-        if (confirm == "yes"):
-            set_trusted(device)
-            return
-        raise bluetooth_exceptions.Rejected("Passkey doesn't match")
+        #confirm = ask("Confirm passkey (yes/no): ")
+        #if (confirm == "yes"):
+        set_trusted(device)
+        return
+        #raise bluetooth_exceptions.Rejected("Passkey doesn't match")
 
     @dbus.service.method(bluetooth_constants.AGENT_INTERFACE,
                          in_signature="o", out_signature="")
@@ -81,7 +81,7 @@ class Agent(dbus.service.Object):
         print("RequestAuthorization (%s)" % (device))
         #auth = ask("Authorize? (yes/no): ")
         #if (auth == "yes"):
-        #    return
+        return
         #raise bluetooth_exceptions.Rejected("Pairing rejected")
 
     @dbus.service.method(bluetooth_constants.AGENT_INTERFACE,
