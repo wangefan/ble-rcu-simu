@@ -9,6 +9,7 @@ import sys
 import dbus
 import dbus.service
 import dbus.mainloop.glib
+from gi.repository import GLib
 from optparse import OptionParser
 import bluezutils
 
@@ -155,7 +156,7 @@ if __name__ == '__main__':
 	path = "/test/agent"
 	agent = Agent(bus, path)
 
-	mainloop = GObject.MainLoop()
+	mainloop = GLib.MainLoop()
 
 	obj = bus.get_object(BUS_NAME, "/org/bluez");
 	manager = dbus.Interface(obj, "org.bluez.AgentManager1")
