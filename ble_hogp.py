@@ -520,11 +520,11 @@ class Report2Characteristic(Characteristic):
         self.value = [dbus.Byte(0x00), dbus.Byte(
             0x00), dbus.Byte(0x00), dbus.Byte(0x00)]
         
-    def send(self):
+    def send(self, key_code):
         #send keyCode: 'VolumeUp'
         print(f'Report2Characteristic, send keyCode: "VolumeUp"***')
         self.PropertiesChanged(bluetooth_constants.GATT_CHARACTERISTIC_INTERFACE, {
-                               'Value': [dbus.Byte(0xE9), dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00)]}, [])
+                               'Value': [dbus.Byte(key_code), dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00)]}, [])
         self.PropertiesChanged(bluetooth_constants.GATT_CHARACTERISTIC_INTERFACE, {
                                'Value': [dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00)]}, [])
         print(f'Report2Characteristic, sent')
@@ -550,7 +550,7 @@ class Report2Characteristic(Characteristic):
 KEY_CODE = "key_code"
 KEY_REPORT_ID = "key_report_id"
 KEY_REPORT_ID_CONSUMER = 0x0C
-KEY_REPORT_ID_STANDARD_KEYBOARD = 0x07
+KEY_REPORT_ID_STANDARD_KEYBOARD = 0x01
 KEK_MAP = {
     'left': {KEY_CODE: 0x44, KEY_REPORT_ID: KEY_REPORT_ID_CONSUMER},  # key left
     'right': {KEY_CODE: 0x45, KEY_REPORT_ID: KEY_REPORT_ID_CONSUMER}, # key right
@@ -592,14 +592,14 @@ class HIDService(Service):
         self.controlPoint = ControlPointCharacteristic(bus, 2, self)
         self.reportMap = ReportMapCharacteristic(bus, 3, self)
         self.reportConsumer = ReportConsumerCharacteristic(bus, 4, self)
-        # self.report2 = Report2Characteristic(bus, 5, self)
+        self.report2 = Report2Characteristic(bus, 5, self)
 
         self.add_characteristic(self.protocolMode)
         self.add_characteristic(self.hidInfo)
         self.add_characteristic(self.controlPoint)
         self.add_characteristic(self.reportMap)
         self.add_characteristic(self.reportConsumer)
-        # self.add_characteristic(self.report2)
+        self.add_characteristic(self.report2)
 
     def onKeyEvent(self, key_event):
         key_info = KEK_MAP.get(key_event.name)
@@ -607,3 +607,5 @@ class HIDService(Service):
         if key_info != None:
             if key_info[KEY_REPORT_ID] == KEY_REPORT_ID_CONSUMER:
                 self.reportConsumer.send(key_info[KEY_CODE])
+            elif key_info[KEY_REPORT_ID] == KEY_REPORT_ID_STANDARD_KEYBOARD:
+                self.report2.send(key_info[KEY_CODE])
