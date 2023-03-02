@@ -488,8 +488,8 @@ class Report2ReferenceDescriptor(Descriptor):
             </Enumerations>
         </Field>
         '''
-        # This report uses ReportId 0x10 as defined in the ReportMap characteristic
-        self.value = dbus.Array(bytearray.fromhex('1001'), signature=dbus.Signature('y'))
+        # This report uses ReportId 0x01 as defined in the ReportMap characteristic
+        self.value = dbus.Array(bytearray.fromhex('0101'), signature=dbus.Signature('y'))
 
     def ReadValue(self, options):
         print(f'Report2ReferenceDescriptor, Read ReportReference: {self.value}')
@@ -517,16 +517,18 @@ class Report2Characteristic(Characteristic):
         '''
         self.add_descriptor(Report2ReferenceDescriptor(bus, 1, self))
         
-        self.value = [dbus.Byte(0x00), dbus.Byte(
-            0x00), dbus.Byte(0x00), dbus.Byte(0x00)]
+        self.value = [dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00), 
+                      dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00)]
         
     def send(self, key_code):
         #send keyCode: 'VolumeUp'
         print(f'Report2Characteristic, send keyCode: "VolumeUp"***')
         self.PropertiesChanged(bluetooth_constants.GATT_CHARACTERISTIC_INTERFACE, {
-                               'Value': [dbus.Byte(key_code), dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00)]}, [])
+                               'Value': [dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(key_code), dbus.Byte(0x00),
+                                         dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00)]}, [])
         self.PropertiesChanged(bluetooth_constants.GATT_CHARACTERISTIC_INTERFACE, {
-                               'Value': [dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00)]}, [])
+                               'Value': [dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00),
+                                         dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00)]}, [])
         print(f'Report2Characteristic, sent')
         return True
                 
@@ -562,16 +564,16 @@ KEK_MAP = {
     'apps': {KEY_CODE: 0x3e, KEY_REPORT_ID: KEY_REPORT_ID_CONSUMER},  # key apps
     'mute': {KEY_CODE: 0xe2, KEY_REPORT_ID: KEY_REPORT_ID_CONSUMER},  # key mute
     'power': {KEY_CODE: 0x30, KEY_REPORT_ID: KEY_REPORT_ID_CONSUMER},  # key power
-    '0': {KEY_CODE: 0x1e, KEY_REPORT_ID: KEY_REPORT_ID_STANDARD_KEYBOARD},  # key 0
-    '1': {KEY_CODE: 0x1f, KEY_REPORT_ID: KEY_REPORT_ID_STANDARD_KEYBOARD},  # key 1
-    '2': {KEY_CODE: 0x20, KEY_REPORT_ID: KEY_REPORT_ID_STANDARD_KEYBOARD},  # key 2
-    '3': {KEY_CODE: 0x21, KEY_REPORT_ID: KEY_REPORT_ID_STANDARD_KEYBOARD},  # key 3
-    '4': {KEY_CODE: 0x22, KEY_REPORT_ID: KEY_REPORT_ID_STANDARD_KEYBOARD},  # key 4
-    '5': {KEY_CODE: 0x23, KEY_REPORT_ID: KEY_REPORT_ID_STANDARD_KEYBOARD},  # key 5
-    '6': {KEY_CODE: 0x24, KEY_REPORT_ID: KEY_REPORT_ID_STANDARD_KEYBOARD},  # key 6
-    '7': {KEY_CODE: 0x25, KEY_REPORT_ID: KEY_REPORT_ID_STANDARD_KEYBOARD},  # key 7
-    '8': {KEY_CODE: 0x26, KEY_REPORT_ID: KEY_REPORT_ID_STANDARD_KEYBOARD},  # key 8
-    '9': {KEY_CODE: 0x27, KEY_REPORT_ID: KEY_REPORT_ID_STANDARD_KEYBOARD},  # key 9
+    '0': {KEY_CODE: 0x27, KEY_REPORT_ID: KEY_REPORT_ID_STANDARD_KEYBOARD},  # key 0
+    '1': {KEY_CODE: 0x1e, KEY_REPORT_ID: KEY_REPORT_ID_STANDARD_KEYBOARD},  # key 1
+    '2': {KEY_CODE: 0x1f, KEY_REPORT_ID: KEY_REPORT_ID_STANDARD_KEYBOARD},  # key 2
+    '3': {KEY_CODE: 0x20, KEY_REPORT_ID: KEY_REPORT_ID_STANDARD_KEYBOARD},  # key 3
+    '4': {KEY_CODE: 0x21, KEY_REPORT_ID: KEY_REPORT_ID_STANDARD_KEYBOARD},  # key 4
+    '5': {KEY_CODE: 0x22, KEY_REPORT_ID: KEY_REPORT_ID_STANDARD_KEYBOARD},  # key 5
+    '6': {KEY_CODE: 0x23, KEY_REPORT_ID: KEY_REPORT_ID_STANDARD_KEYBOARD},  # key 6
+    '7': {KEY_CODE: 0x24, KEY_REPORT_ID: KEY_REPORT_ID_STANDARD_KEYBOARD},  # key 7
+    '8': {KEY_CODE: 0x25, KEY_REPORT_ID: KEY_REPORT_ID_STANDARD_KEYBOARD},  # key 8
+    '9': {KEY_CODE: 0x26, KEY_REPORT_ID: KEY_REPORT_ID_STANDARD_KEYBOARD},  # key 9
 }
 
 
