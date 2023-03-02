@@ -1,13 +1,6 @@
 #!/usr/bin/python3
 import dbus.service
 import bluetooth_constants
-import bluetooth_exceptions
-
-
-def set_trusted(path):
-    props = dbus.Interface(bus.get_object("org.bluez", path),
-                           "org.freedesktop.DBus.Properties")
-    props.Set("org.bluez.Device1", "Trusted", True)
 
 
 def ask(prompt):
@@ -16,12 +9,21 @@ def ask(prompt):
     except:
         return input(prompt)
 
-
 class Agent(dbus.service.Object):
-    exit_on_release = True
+
+    def __init__(self, bus):
+        self.bus = bus
+        self.exit_on_release = True
 
     def set_exit_on_release(self, exit_on_release):
         self.exit_on_release = exit_on_release
+
+    def set_trusted(self, path):
+        print("set_trusted")
+        props = dbus.Interface(self.bus.get_object("org.bluez", path),
+                               "org.freedesktop.DBus.Properties")
+        props.Set("org.bluez.Device1", "Trusted", True)
+        print("set_trusted ok")
 
     @dbus.service.method(bluetooth_constants.AGENT_INTERFACE,
                          in_signature="", out_signature="")
@@ -43,14 +45,14 @@ class Agent(dbus.service.Object):
                          in_signature="o", out_signature="s")
     def RequestPinCode(self, device):
         print("RequestPinCode (%s)" % (device))
-        set_trusted(device)
+        self.set_trusted(device)
         return ask("Enter PIN Code: ")
 
     @dbus.service.method(bluetooth_constants.AGENT_INTERFACE,
                          in_signature="o", out_signature="u")
     def RequestPasskey(self, device):
         print("RequestPasskey (%s)" % (device))
-        set_trusted(device)
+        self.set_trusted(device)
         passkey = ask("Enter passkey: ")
         return dbus.UInt32(passkey)
 
@@ -71,7 +73,7 @@ class Agent(dbus.service.Object):
         print("RequestConfirmation (%s, %06d)" % (device, passkey))
         #confirm = ask("Confirm passkey (yes/no): ")
         #if (confirm == "yes"):
-        set_trusted(device)
+        self.set_trusted(device)
         return
         #raise bluetooth_exceptions.Rejected("Passkey doesn't match")
 
