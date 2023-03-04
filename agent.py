@@ -11,17 +11,18 @@ def ask(prompt):
 
 class Agent(dbus.service.Object):
 
-    def __init__(self, bus):
+    def __init__(self, bus, path):
         self.bus = bus
-        self.exit_on_release = True
+        self.exit_on_release = False
+        dbus.service.Object.__init__(self, bus, path)
 
     def set_exit_on_release(self, exit_on_release):
         self.exit_on_release = exit_on_release
 
-    def set_trusted(self, path):
-        print("set_trusted")
-        props = dbus.Interface(self.bus.get_object("org.bluez", path),
-                               "org.freedesktop.DBus.Properties")
+    def set_trusted(self, device):
+        print(f"set_trusted, device = {device}")
+        props = dbus.Interface(self.bus.get_object(
+            bluetooth_constants.BLUEZ_SERVICE_NAME, device), bluetooth_constants.DBUS_PROPERTIES)
         props.Set("org.bluez.Device1", "Trusted", True)
         print("set_trusted ok")
 
