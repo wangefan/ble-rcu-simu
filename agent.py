@@ -36,7 +36,7 @@ class Agent(dbus.service.Object):
     @dbus.service.method(bluetooth_constants.AGENT_INTERFACE,
                          in_signature="os", out_signature="")
     def AuthorizeService(self, device, uuid):
-        print("AuthorizeService (%s, %s)" % (device, uuid))
+        print("AuthorizeService (%s, %s), always authorize services!" % (device, uuid))
         #authorize = ask("Authorize connection (yes/no): ")
         #if (authorize == "yes"):
         return
@@ -71,7 +71,7 @@ class Agent(dbus.service.Object):
     @dbus.service.method(bluetooth_constants.AGENT_INTERFACE,
                          in_signature="ou", out_signature="")
     def RequestConfirmation(self, device, passkey):
-        print("RequestConfirmation (%s, %06d)" % (device, passkey))
+        print("RequestConfirmation (%s, %06d), always confirm!" % (device, passkey))
         #confirm = ask("Confirm passkey (yes/no): ")
         #if (confirm == "yes"):
         self.set_trusted(device)
@@ -81,7 +81,7 @@ class Agent(dbus.service.Object):
     @dbus.service.method(bluetooth_constants.AGENT_INTERFACE,
                          in_signature="o", out_signature="")
     def RequestAuthorization(self, device):
-        print("RequestAuthorization (%s)" % (device))
+        print("RequestAuthorization (%s), always authorize!" % (device))
         #auth = ask("Authorize? (yes/no): ")
         #if (auth == "yes"):
         return
