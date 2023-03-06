@@ -20,26 +20,13 @@ g_application = None
 def register_ad_cb():
     global g_is_advertising
     g_is_advertising = True
-    print("Registered RCUAdvertisement " + g_rcu_advertisement.get_path() + ", instruct controller to start advertising.. (press q to exit process)", )
+    print(f"{g_rcu_advertisement.get_local_name()} start advertising.. (press q to exit\n")
 
 def register_ad_error_cb(error):
     global g_is_advertising
     g_is_advertising = False
-    print("Failed to register RCUAdvertisement: " + str(error))
+    print(f"Failed to register RCUAdvertisement: %s, exit!", str(error))
     closeAll()
-
-"""
-class RCUService(Service):
-    
-    RCU service that provides characteristics and descriptors that
-    exercise various API functionality.
-    
-    RCU_PATH_BASE = "/org/bluez/rcu/gatt_service"
-    RCU_SVC_UUID = '12345678-1234-5678-1234-56789abcdef0'
-
-    def __init__(self, bus):
-        Service.__init__(self, bus, self.RCU_PATH_BASE, self.RCU_SVC_UUID, True)
-"""
 
 class Application(dbus.service.Object):
     """
@@ -170,7 +157,7 @@ def stop_advertising():
     global g_is_advertising
     if g_is_advertising:
         g_ad_manager.UnregisterAdvertisement(g_rcu_advertisement.get_path())
-        print("Unregistered RCUAdvertisement " + g_rcu_advertisement.get_path() + ", instruct controller to stop advertising")
+        print(f"{g_rcu_advertisement.get_local_name()} stop advertising")
         g_is_advertising = False
 
 def closeAll():
@@ -208,6 +195,8 @@ def main():
                       bluetooth_constants.ADAPTER_PROP_DISCOVERABLE, dbus.Boolean(1))
     adapter_props.Set(bluetooth_constants.ADAPTER_INTERFACE,
                       bluetooth_constants.ADAPTER_PROP_PAIRABLE, dbus.Boolean(1))
+    mac_address = adapter_props.Get(
+        bluetooth_constants.ADAPTER_INTERFACE, bluetooth_constants.ADAPTER_PROP_MAC_ADDRESS)
 
     print("2. Agent procedure")
     AGENT_PATH = bluetooth_constants.BLUEZ_OBJ_ROOT + "agent"
@@ -221,7 +210,7 @@ def main():
     g_ad_manager = dbus.Interface(bus.get_object(
         bluetooth_constants.BLUEZ_SERVICE_NAME, adapter_obj), bluetooth_constants.ADVERTISING_MANAGER_INTERFACE)
     global g_rcu_advertisement
-    g_rcu_advertisement = RCUAdvertisement(bus, 0)
+    g_rcu_advertisement = RCUAdvertisement(bus, mac_address, 0)
     start_advertising()
 
     print('4. Registering GATT procedure')
