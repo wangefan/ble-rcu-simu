@@ -5,7 +5,7 @@ from gi.repository import GLib
 import dbus
 import dbus.exceptions
 import dbus.service
-from Advertise import RCUAdvertisement
+from advertise import RCUAdvertisement
 from agent import Agent
 from ble_hogp import DeviceInfoService, BatteryService, HIDService
 from key_event_monitor import KeyEventMonitor
