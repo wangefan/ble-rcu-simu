@@ -20,39 +20,39 @@ class Agent(dbus.service.Object):
         self.exit_on_release = exit_on_release
 
     def set_trusted(self, device):
-        print(f"set_trusted, device = {device}")
+        print(f"Agent.set_trusted, device = {device}")
         props = dbus.Interface(self.bus.get_object(
             bluetooth_constants.BLUEZ_SERVICE_NAME, device), bluetooth_constants.DBUS_PROPERTIES)
         props.Set("org.bluez.Device1", "Trusted", True)
-        print("set_trusted ok")
+        print("Agent.set_trusted ok")
 
     @dbus.service.method(bluetooth_constants.AGENT_INTERFACE,
                          in_signature="", out_signature="")
     def Release(self):
-        print("Release")
+        print("Agent.Release")
         if self.exit_on_release:
             mainloop.quit()
 
+    # This method gets called when the service daemon
+    # needs to authorize a connection/service request.
     @dbus.service.method(bluetooth_constants.AGENT_INTERFACE,
                          in_signature="os", out_signature="")
     def AuthorizeService(self, device, uuid):
-        print("AuthorizeService (%s, %s), always authorize services!" % (device, uuid))
-        #authorize = ask("Authorize connection (yes/no): ")
-        #if (authorize == "yes"):
+        print("Agent.AuthorizeService (%s, %s), always authorize services!" %
+              (device, uuid))
         return
-        #raise bluetooth_exceptions.Rejected("Connection rejected by user")
 
     @dbus.service.method(bluetooth_constants.AGENT_INTERFACE,
                          in_signature="o", out_signature="s")
     def RequestPinCode(self, device):
-        print("RequestPinCode (%s)" % (device))
+        print("Agent.RequestPinCode (%s)" % (device))
         self.set_trusted(device)
         return ask("Enter PIN Code: ")
 
     @dbus.service.method(bluetooth_constants.AGENT_INTERFACE,
                          in_signature="o", out_signature="u")
     def RequestPasskey(self, device):
-        print("RequestPasskey (%s)" % (device))
+        print("Agent.RequestPasskey (%s)" % (device))
         self.set_trusted(device)
         passkey = ask("Enter passkey: ")
         return dbus.UInt32(passkey)
@@ -60,34 +60,37 @@ class Agent(dbus.service.Object):
     @dbus.service.method(bluetooth_constants.AGENT_INTERFACE,
                          in_signature="ouq", out_signature="")
     def DisplayPasskey(self, device, passkey, entered):
-        print("DisplayPasskey (%s, %06u entered %u)" %
+        print("Agent.DisplayPasskey (%s, %06u entered %u)" %
               (device, passkey, entered))
 
     @dbus.service.method(bluetooth_constants.AGENT_INTERFACE,
                          in_signature="os", out_signature="")
     def DisplayPinCode(self, device, pincode):
-        print("DisplayPinCode (%s, %s)" % (device, pincode))
+        print("Agent.DisplayPinCode (%s, %s)" % (device, pincode))
 
+    # This method gets called when the service daemon
+    # needs to confirm a passkey for an authentication.
+    # To confirm the value it should return an empty reply
+    # or an error in case the passkey is invalid.
     @dbus.service.method(bluetooth_constants.AGENT_INTERFACE,
                          in_signature="ou", out_signature="")
     def RequestConfirmation(self, device, passkey):
-        print("RequestConfirmation (%s, %06d), always confirm!" % (device, passkey))
-        #confirm = ask("Confirm passkey (yes/no): ")
-        #if (confirm == "yes"):
+        print("Agent.RequestConfirmation (%s, %06d), always confirm!" %
+              (device, passkey))
         self.set_trusted(device)
         return
-        #raise bluetooth_exceptions.Rejected("Passkey doesn't match")
 
+    # This method gets called to request the user to
+    # authorize an incoming pairing attempt which
+    # would in other circumstances trigger the just-works
+    # model.
     @dbus.service.method(bluetooth_constants.AGENT_INTERFACE,
                          in_signature="o", out_signature="")
     def RequestAuthorization(self, device):
-        print("RequestAuthorization (%s), always authorize!" % (device))
-        #auth = ask("Authorize? (yes/no): ")
-        #if (auth == "yes"):
+        print("Agent.RequestAuthorization (%s), always authorize!" % (device))
         return
-        #raise bluetooth_exceptions.Rejected("Pairing rejected")
 
     @dbus.service.method(bluetooth_constants.AGENT_INTERFACE,
                          in_signature="", out_signature="")
     def Cancel(self):
-        print("Cancel")
+        print("Agent.Cancel get called")
