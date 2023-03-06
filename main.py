@@ -204,6 +204,7 @@ def main():
     agent_manager = dbus.Interface(bus.get_object(bluetooth_constants.BLUEZ_SERVICE_NAME, '/org/bluez'),
                                    bluetooth_constants.AGENT_MANAGER_INTERFACE)
     agent_manager.RegisterAgent(AGENT_PATH, "NoInputNoOutput")
+    agent_manager.RequestDefaultAgent(AGENT_PATH)
 
     print("3. Advertise procedure")
     global g_ad_manager
