@@ -9,24 +9,33 @@ from advertise import RCUAdvertisement
 from agent import Agent
 from ble_hogp import DeviceInfoService, BatteryService, HIDService
 from key_event_monitor import KeyEventMonitor
+from enum import Enum
+
+
+class MainState(Enum):
+    ADVERTISING = 0
+    CONNECTING = 1
+    CONNECTED = 2
 
 g_mainloop = None
-g_is_advertising = False
+g_main_state = MainState.ADVERTISING
 g_ad_manager = None 
 g_rcu_advertisement = None
 g_application = None
 
 
+
 def register_ad_cb():
-    global g_is_advertising
-    g_is_advertising = True
-    print(f"{g_rcu_advertisement.get_local_name()} start advertising.. (press q to exit\n")
+    print(f"{g_rcu_advertisement.get_local_name()} start advertising.. (press q to exit")
 
 def register_ad_error_cb(error):
-    global g_is_advertising
-    g_is_advertising = False
     print(f"Failed to register RCUAdvertisement: %s, exit!", str(error))
     closeAll()
+
+
+def application_all_services_registered_cb(path):
+    print(f"application_all_services_registered_cb called, path = {path}")
+    update_state(path)
 
 class Application(dbus.service.Object):
     """
@@ -37,17 +46,25 @@ class Application(dbus.service.Object):
         self.path = '/'
         self.services = []
         dbus.service.Object.__init__(self, bus, self.path)
-        self.hid_service = HIDService(bus)
+        self.all_services_registered = False
+        self.all_services_registered_cb = None
+        self.hid_service = HIDService(bus, self.service_registered_cb)
         self.add_service(self.hid_service)
         self.add_service(DeviceInfoService(bus))
         self.add_service(BatteryService(bus))
 
-        self.connected = False
+        self.online = False
         self.KeyEventMonitor = KeyEventMonitor(self.onKeyEvent, self.onExit)
         self.KeyEventMonitor.start()
 
     def get_path(self):
         return dbus.ObjectPath(self.path)
+
+    def service_registered_cb(self, obj_path):
+        print(f"Application.service_registered_cb get {obj_path}")
+        self.all_services_registered = True
+        if self.all_services_registered_cb != None:
+            self.all_services_registered_cb(obj_path)
 
     def add_service(self, service):
         self.services.append(service)
@@ -72,14 +89,21 @@ class Application(dbus.service.Object):
 
         return response
 
-    def set_connected(self, connected):
-        self.connected = connected
+    def set_online(self, online):
+        self.online = online
+
+    def get_all_services_registered(self):
+        return self.all_services_registered
+    
+    def set_all_services_registered_cb(self, cb):
+        print(f"Application.set_all_services_registered_cb called")
+        self.all_services_registered_cb = cb
 
     def onExit(self):
         closeAll()
 
     def onKeyEvent(self, key_event):
-        if self.connected:
+        if self.online:
             self.hid_service.onKeyEvent(key_event)
         else:
             pass
@@ -92,16 +116,38 @@ def register_app_error_cb(error):
     print('4. Failed to register GATT application: ' + str(error))
     closeAll()
 
-def set_connected_status(status):
+
+def update_state(path):
+    bus = dbus.SystemBus()
+    properties_in_path = dbus.Interface(bus.get_object(
+        bluetooth_constants.BLUEZ_SERVICE_NAME, path), bluetooth_constants.DBUS_PROPERTIES)
+    connected_state = properties_in_path.Get(
+        bluetooth_constants.DEVICE_INTERFACE, bluetooth_constants.DEVICE_PROP_CONNECTED)
+    print(f"update_state, path = {path}, connected_state = {connected_state}")
+
     global g_application
-    if (status == 1):
-        g_application.set_connected(True)
-        print("connected")
-        stop_advertising()
+    if connected_state == True:
+        if g_application.get_all_services_registered():
+            g_main_state = MainState.CONNECTED
+        else:
+            g_main_state = MainState.CONNECTING
     else:
-        g_application.set_connected(False)
-        print("disconnected")
+        g_main_state = MainState.ADVERTISING
+
+    if g_main_state == MainState.ADVERTISING:
+        g_application.set_online(False)
+        print("Application is not ready, into advertising state")
         start_advertising()
+    elif g_main_state == MainState.CONNECTING:
+        g_application.set_online(False)
+        stop_advertising()
+        print("Now is connecting ...")
+    elif g_main_state == MainState.CONNECTED:
+        stop_advertising()
+        g_application.set_online(True)
+        print(
+            "Application is ready, press any key to send the events.. (press q to exit")
+        
 
 """
 When a connection for a device which is already known is established, a PropertiesChanged signal is
@@ -110,7 +156,7 @@ instead emitted with the Connected property
 def properties_changed(interface, changed, invalidated, path):
     if (interface == bluetooth_constants.DEVICE_INTERFACE):
         if ("Connected" in changed):
-            set_connected_status(changed["Connected"])
+            update_state(path)
 
 """
 When a connection for a previously unknown device is established, an InterfacesAdded signal is
@@ -120,7 +166,7 @@ def interfaces_added(path, interfaces):
     if bluetooth_constants.DEVICE_INTERFACE in interfaces:
         properties = interfaces[bluetooth_constants.DEVICE_INTERFACE]
         if ("Connected" in properties):
-            set_connected_status(properties["Connected"])
+            update_state(path)
 
 """
 Returns the first object that the bluez service has that has a GattManager1 interface,
@@ -141,24 +187,24 @@ def find_adapter(bus):
 def start_advertising():
     global g_ad_manager 
     global g_rcu_advertisement
-    global g_is_advertising
-    if g_is_advertising == False:
-        # This causes BlueZ to instruct the controller to start advertising
-        g_ad_manager.RegisterAdvertisement(
-            g_rcu_advertisement.get_path(),
-            {},
-            reply_handler=register_ad_cb,
-            error_handler=register_ad_error_cb,
-        )
+    # This causes BlueZ to instruct the controller to start advertising
+    g_ad_manager.RegisterAdvertisement(
+        g_rcu_advertisement.get_path(),
+        {},
+        reply_handler=register_ad_cb,
+        error_handler=register_ad_error_cb,
+    )
 
 def stop_advertising():
     global g_ad_manager
     global g_rcu_advertisement
-    global g_is_advertising
-    if g_is_advertising:
+    try:
         g_ad_manager.UnregisterAdvertisement(g_rcu_advertisement.get_path())
-        print(f"{g_rcu_advertisement.get_local_name()} stop advertising")
-        g_is_advertising = False
+    except:
+        dbus.exceptions.DBusException
+        pass
+    print(f"{g_rcu_advertisement.get_local_name()} stop advertising")
+        
 
 def closeAll():
     stop_advertising()
@@ -221,6 +267,7 @@ def main():
 
     global g_application
     g_application = Application(bus)
+    g_application.set_all_services_registered_cb(application_all_services_registered_cb)
     gatt_service_manager.RegisterApplication(g_application.get_path(), {},
                                              reply_handler=register_app_cb,
                                              error_handler=register_app_error_cb)

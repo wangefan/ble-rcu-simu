@@ -82,6 +82,7 @@ REPORT_MAP = bytes((
     0xc0, # End collection
 ))
 
+g_service_registered_cb = None
 class BatteryLevelCharacteristic(Characteristic):
     """
     Fake Battery Level characteristic. The battery level is drained by 2 points
@@ -493,6 +494,8 @@ class Report2ReferenceDescriptor(Descriptor):
 
     def ReadValue(self, options):
         print(f'Report2ReferenceDescriptor, Read ReportReference: {self.value}')
+        path = options['device']
+        g_service_registered_cb(path)
         return self.value
 
 class Report2Characteristic(Characteristic):
@@ -586,7 +589,7 @@ class HIDService(Service):
             self.key_code = key_code
             self.key_category = key_category
 
-    def __init__(self, bus):
+    def __init__(self, bus, service_registered_cb):
         Service.__init__(self, bus, self.PATH_BASE, self.SERVICE_UUID, True)
 
         self.protocolMode = ProtocolModeCharacteristic(bus, 0, self)
@@ -595,6 +598,9 @@ class HIDService(Service):
         self.reportMap = ReportMapCharacteristic(bus, 3, self)
         self.reportConsumer = ReportConsumerCharacteristic(bus, 4, self)
         self.report2 = Report2Characteristic(bus, 5, self)
+
+        global g_service_registered_cb
+        g_service_registered_cb = service_registered_cb
 
         self.add_characteristic(self.protocolMode)
         self.add_characteristic(self.hidInfo)
