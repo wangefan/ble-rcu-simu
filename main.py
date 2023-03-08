@@ -161,8 +161,8 @@ instead emitted with the Connected property
 """
 def properties_changed(interface, changed, invalidated, path):
     if (interface == bluetooth_constants.DEVICE_INTERFACE):
-        print(f"properties_changed called, path = {path}")
         if ("Connected" in changed):
+            print(f"properties_changed called with Connected property, path = {path}")
             if ["changed" == 0]: # mean from connected to disconnected, we need to reset services to unregistered
                 g_application.set_all_services_unregistered()
             update_state(path)
@@ -173,9 +173,9 @@ emitted by a device object with Connected status.
 """
 def interfaces_added(path, interfaces):
     if bluetooth_constants.DEVICE_INTERFACE in interfaces:
-        print(f"interfaces_added called, path = {path}")
         properties = interfaces[bluetooth_constants.DEVICE_INTERFACE]
         if ("Connected" in properties):
+            print(f"interfaces_added called with Connected property, path = {path}")
             update_state(path)
 
 """
