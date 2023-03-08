@@ -116,7 +116,7 @@ class BatteryLevelCharacteristic(Characteristic):
                 #self.battery_lvl = 0
                 GLib.source_remove(self.timer)
                 
-        print('BatteryLevelCharacteristic, battery Level drained: ' + repr(self.battery_lvl))
+        #print('BatteryLevelCharacteristic, battery Level drained: ' + repr(self.battery_lvl))
         self.notify_battery_level()
         return True
  
@@ -125,7 +125,7 @@ class BatteryLevelCharacteristic(Characteristic):
         return [dbus.Byte(self.battery_lvl)]
 
     def StartNotify(self):
-        print('BatteryLevelCharacteristic StartNotify')
+        print('BatteryLevelCharacteristic.StartNotify')
         
         if self.notifying:
             print('BatteryLevelCharacteristic already notifying, nothing to do')
@@ -136,12 +136,14 @@ class BatteryLevelCharacteristic(Characteristic):
 
     def StopNotify(self):
         print('BatteryLevelCharacteristic StopNotify')
-        
+
         if not self.notifying:
             print('BatteryLevelCharacteristic not notifying, nothing to do')
             return
 
         self.notifying = False
+
+
 class BatteryService(Service):
     """
     Fake Battery service that emulates a draining battery.
