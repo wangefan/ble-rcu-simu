@@ -29,8 +29,11 @@ def register_ad_cb():
     print(f"{g_rcu_advertisement.get_local_name()} start advertising.. (press q to exit")
 
 def register_ad_error_cb(error):
-    print(f"Failed to register RCUAdvertisement: %s, exit!", str(error))
-    closeAll()
+    if "AlreadyExists" in error:
+        print(f"{g_rcu_advertisement.get_local_name()} has already registered, keep advertising.. (press q to exit")
+    else:
+        print(f"Failed to register RCUAdvertisement: %s, exit!", str(error))
+        closeAll()
 
 
 def application_all_services_registered_cb(path):
@@ -95,6 +98,9 @@ class Application(dbus.service.Object):
     def get_all_services_registered(self):
         return self.all_services_registered
     
+    def set_all_services_unregistered(self):
+        self.all_services_registered = False
+    
     def set_all_services_registered_cb(self, cb):
         print(f"Application.set_all_services_registered_cb called")
         self.all_services_registered_cb = cb
@@ -156,6 +162,8 @@ instead emitted with the Connected property
 def properties_changed(interface, changed, invalidated, path):
     if (interface == bluetooth_constants.DEVICE_INTERFACE):
         if ("Connected" in changed):
+            if ["changed" == 0]: # mean from connected to disconnected, we need to reset services to unregistered
+                g_application.set_all_services_unregistered()
             update_state(path)
 
 """
