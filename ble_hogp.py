@@ -255,7 +255,7 @@ class ProtocolModeCharacteristic(Characteristic):
         self.value = dbus.Array(bytearray.fromhex('01'), signature=dbus.Signature('y'))
 
     def ReadValue(self, options):
-        print(f'Read ProtocolMode: {self.value}')
+        print(f'Read ProtocolMode ..')
         return self.value
 
     def WriteValue(self, value, options):
@@ -279,7 +279,7 @@ class HIDInfoCharacteristic(Characteristic):
         self.value = dbus.Array(bytearray.fromhex('01010002'), signature=dbus.Signature('y'))
 
     def ReadValue(self, options):
-        print(f'HIDInfoCharacteristic, Read HIDInformation: {self.value}')
+        print(f'Read HIDInformation ..')
         return self.value
 
 class ControlPointCharacteristic(Characteristic):
@@ -364,10 +364,10 @@ class ReportMapCharacteristic(Characteristic):
         self.value = dbus.Array(REPORT_MAP)
 
     def ReadValue(self, options):
-        print(f'ReportMapCharacteristic, Read ReportMap: {self.value}')
+        print(f'Read ReportMap ..')
         return self.value
 
-class Report1ReferenceDescriptor(Descriptor):
+class ComAVDescriptor(Descriptor):
 
     DESCRIPTOR_UUID = '2908'
 
@@ -400,24 +400,25 @@ class Report1ReferenceDescriptor(Descriptor):
             </Enumerations>
         </Field>
         '''
-        # This report uses ReportId 0x0c as defined in the ReportMap characteristic
+        # Thisuses ReportId 0x0c (Standard Consumer/AV control  buttons) defined in the ReportMap
         self.value = dbus.Array(bytearray.fromhex('0C01'), signature=dbus.Signature('y'))
 
     def ReadValue(self, options):
-        print(f'Report1ReferenceDescriptor, Read ReportReference: {self.value}')
+        print(f'Read ComAVReportDescriptor ..')
         return self.value
 
-class ReportConsumerCharacteristic(Characteristic):
+
+class ConsumerCharacteristic(Characteristic):
 
     CHARACTERISTIC_UUID = '2A4D'
 
     def __init__(self, bus, index, service):
         Characteristic.__init__(
-                self, bus, index,
-                self.CHARACTERISTIC_UUID,
-                ['secure-read', 'notify'],
-                service)
-                
+            self, bus, index,
+            self.CHARACTERISTIC_UUID,
+            ['secure-read', 'notify'],
+            service)
+
         '''
         <Field name="Report Value">
         <Requirement>Mandatory</Requirement>
@@ -427,36 +428,38 @@ class ReportConsumerCharacteristic(Characteristic):
         
         Use standard key codes: https://www.usb.org/sites/default/files/documents/hut1_12v2.pdf
         '''
-        self.add_descriptor(Report1ReferenceDescriptor(bus, 1, self))
-        
+        self.add_descriptor(ComAVDescriptor(bus, 1, self))
+
         self.value = [dbus.Byte(0x00), dbus.Byte(
             0x00), dbus.Byte(0x00), dbus.Byte(0x00)]
-        
-        
+
     def send(self, key_code):
-        print(f'ReportConsumerCharacteristic, send keyCode: {key_code}')
+        print(f'ConsumerCharacteristic, send keyCode: {key_code}')
         self.PropertiesChanged(bluetooth_constants.GATT_CHARACTERISTIC_INTERFACE, {
                                'Value': [dbus.Byte(key_code), dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00)]}, [])
         self.PropertiesChanged(bluetooth_constants.GATT_CHARACTERISTIC_INTERFACE, {
                                'Value': [dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00)]}, [])
-        print(f'ReportConsumerCharacteristic, sent')
+        print(f'ConsumerCharacteristic, sent')
         return True
-                
+
+    # This is not be read while service registered by central
     def ReadValue(self, options):
-        print(f'ReportConsumerCharacteristic, Read Report: {self.value}')
+        print(f'Read ConsumerCharacteristic ..')
         return self.value
 
+    # This is supposed not to be workable while central write value directly
     def WriteValue(self, value, options):
-        print(f'ReportConsumerCharacteristic, Write Report {self.value}')
+        print(f'Write ConsumerCharacteristic {value}')
         self.value = value
 
     def StartNotify(self):
-        print(f'ReportConsumerCharacteristic.StartNotify() called')
+        print(f'ConsumerCharacteristic.StartNotify() called')
 
     def StopNotify(self):
-        print(f'ReportConsumerCharacteristic.StopNotify() called')
+        print(f'ConsumerCharacteristic.StopNotify() called')
 
-class Report2ReferenceDescriptor(Descriptor):
+
+class STDKeyboardDescriptor(Descriptor):
 
     DESCRIPTOR_UUID = '2908'
 
@@ -489,16 +492,16 @@ class Report2ReferenceDescriptor(Descriptor):
             </Enumerations>
         </Field>
         '''
-        # This report uses ReportId 0x01 as defined in the ReportMap characteristic
+        # Thisuses ReportId 0x01(Standard keyboard buttons) as defined in the ReportMap characteristic
         self.value = dbus.Array(bytearray.fromhex('0101'), signature=dbus.Signature('y'))
 
     def ReadValue(self, options):
-        print(f'Report2ReferenceDescriptor, Read ReportReference: {self.value}')
+        print(f'Read STDKeyboardDescriptor ..')
         path = options['device']
         g_service_registered_cb(path)
         return self.value
 
-class Report2Characteristic(Characteristic):
+class STDKeyboardCharacteristic(Characteristic):
 
     CHARACTERISTIC_UUID = '2A4D'
 
@@ -518,38 +521,36 @@ class Report2Characteristic(Characteristic):
         
         Use standard key codes: https://www.usb.org/sites/default/files/documents/hut1_12v2.pdf
         '''
-        self.add_descriptor(Report2ReferenceDescriptor(bus, 1, self))
+        self.add_descriptor(STDKeyboardDescriptor(bus, 1, self))
         
         self.value = [dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00), 
                       dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00)]
         
     def send(self, key_code):
-        #send keyCode: 'VolumeUp'
-        print(f'Report2Characteristic, send keyCode: "VolumeUp"***')
+        print(f'STDKeyboardCharacteristic, send keyCode: {key_code}')
         self.PropertiesChanged(bluetooth_constants.GATT_CHARACTERISTIC_INTERFACE, {
                                'Value': [dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(key_code), dbus.Byte(0x00),
                                          dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00)]}, [])
         self.PropertiesChanged(bluetooth_constants.GATT_CHARACTERISTIC_INTERFACE, {
                                'Value': [dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00),
                                          dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00)]}, [])
-        print(f'Report2Characteristic, sent')
+        print(f'STDKeyboardCharacteristic, sent')
         return True
-                
+
     def ReadValue(self, options):
-        print(f'Report2Characteristic, Read Report: {self.value}')
+        print(f'Read STDKeyboardCharacteristic ..')
         return self.value
 
+    # This is supposed not to be workable while central write value directly
     def WriteValue(self, value, options):
-        print(f'Report2Characteristic, Write Report {self.value}')
+        print(f'Write STDKeyboardCharacteristic {value}')
         self.value = value
 
     def StartNotify(self):
-        print(f'Report2Characteristic, Start Report Consumer Input')
-        self.timer = GLib.timeout_add(15000, self.send)
-        print(f'Report2Characteristic, Start Report Consumer Input end')
+        print(f'STDKeyboardCharacteristic.StartNotify() called')
 
     def StopNotify(self):
-        print(f'Report2Characteristic, Stop Start Report Consumer Input')
+        print(f'STDKeyboardCharacteristic.StopNotify() called')
 
 
 KEY_CODE = "key_code"
@@ -596,8 +597,8 @@ class HIDService(Service):
         self.hidInfo = HIDInfoCharacteristic(bus, 1, self)
         self.controlPoint = ControlPointCharacteristic(bus, 2, self)
         self.reportMap = ReportMapCharacteristic(bus, 3, self)
-        self.reportConsumer = ReportConsumerCharacteristic(bus, 4, self)
-        self.report2 = Report2Characteristic(bus, 5, self)
+        self.reportConsumer = ConsumerCharacteristic(bus, 4, self)
+        self.report2 = STDKeyboardCharacteristic(bus, 5, self)
 
         global g_service_registered_cb
         g_service_registered_cb = service_registered_cb
