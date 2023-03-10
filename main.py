@@ -163,7 +163,8 @@ def properties_changed(interface, changed, invalidated, path):
     if (interface == bluetooth_constants.DEVICE_INTERFACE):
         if ("Connected" in changed):
             print(f"properties_changed called with Connected property, path = {path}")
-            if ["changed" == 0]: # mean from connected to disconnected, we need to reset services to unregistered
+            if changed["Connected"] == 0: # mean from connected to disconnected, we need to reset services to unregistered
+                print("call g_application.set_all_services_unregistered()")
                 g_application.set_all_services_unregistered()
             update_state(path)
 
