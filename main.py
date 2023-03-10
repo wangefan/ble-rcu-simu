@@ -123,12 +123,21 @@ def register_app_error_cb(error):
     closeAll()
 
 
+# If the object path by central has the property "Connected" with True, 
+# It experiences central is connected with peripheral but not workable 
+# since the profiles have no registered yet, hence it would be the state 
+# MainState.CONNECTING.
 def update_state(path):
+    connected_state = False
     bus = dbus.SystemBus()
-    properties_in_path = dbus.Interface(bus.get_object(
-        bluetooth_constants.BLUEZ_SERVICE_NAME, path), bluetooth_constants.DBUS_PROPERTIES)
-    connected_state = properties_in_path.Get(
-        bluetooth_constants.DEVICE_INTERFACE, bluetooth_constants.DEVICE_PROP_CONNECTED)
+    try:
+        properties_in_path = dbus.Interface(bus.get_object(
+            bluetooth_constants.BLUEZ_SERVICE_NAME, path), bluetooth_constants.DBUS_PROPERTIES)
+        connected_state = properties_in_path.Get(
+            bluetooth_constants.DEVICE_INTERFACE, bluetooth_constants.DEVICE_PROP_CONNECTED)
+    except Exception as e:
+        print(f"update_state, exception occurs with :{e}")    
+        
     print(f"update_state, path = {path}, connected_state = {connected_state}")
 
     global g_application
