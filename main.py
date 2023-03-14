@@ -28,11 +28,11 @@ g_tivo_rcu_service = None
 
 
 def register_ad_cb():
-    print(f"{g_rcu_advertisement.get_local_name()} start advertising.. (press q to exit")
+    print(f"{g_rcu_advertisement.get_local_name()} start advertising.. (press esc to exit")
 
 def register_ad_error_cb(error):
     if "AlreadyExists" in str(error):
-        print(f"{g_rcu_advertisement.get_local_name()} has already registered, keep advertising.. (press q to exit")
+        print(f"{g_rcu_advertisement.get_local_name()} has already registered, keep advertising.. (press esc to exit")
     else:
         print(f"Failed to register RCUAdvertisement: {str(error)}, exit!")
         closeAll()
@@ -169,7 +169,7 @@ def update_state(path):
         stop_advertising()
         g_tivo_rcu_service.set_online(True)
         print(
-            "TivoRCUService is ready, press any key to send the events.. (press q to exit")
+            "TivoRCUService is ready, press any key to send the events.. (press esc to exit")
         
 
 """

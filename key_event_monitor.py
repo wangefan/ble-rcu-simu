@@ -15,7 +15,7 @@ class KeyEventMonitor(threading.Thread):
             event = keyboard.read_event()
             #print(f'KeyEventMonitor, current event: {event.name}')
             if event.event_type == keyboard.KEY_UP:
-                if event.name == 'q':
+                if event.name == 'esc':
                     print('stop monitor key events')
                     break
                 else:
