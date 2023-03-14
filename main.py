@@ -10,6 +10,8 @@ from agent import Agent
 from ble_hogp import DeviceInfoService, BatteryService, HIDService
 from key_event_monitor import KeyEventMonitor
 from enum import Enum
+from PyQt5 import QtCore, QtWidgets
+from tivo_rcu import TivoRcuDlg
 
 
 class MainState(Enum):
@@ -17,12 +19,12 @@ class MainState(Enum):
     CONNECTING = 1
     CONNECTED = 2
 
-g_mainloop = None
-g_main_state = MainState.ADVERTISING
-g_ad_manager = None 
-g_rcu_advertisement = None
-g_application = None
 
+g_core_application = None
+g_main_state = MainState.ADVERTISING
+g_ad_manager = None
+g_rcu_advertisement = None
+g_tivo_rcu_service = None
 
 
 def register_ad_cb():
@@ -40,7 +42,7 @@ def application_all_services_registered_cb(path):
     print(f"application_all_services_registered_cb called, path = {path}")
     update_state(path)
 
-class Application(dbus.service.Object):
+class TivoRCUService(dbus.service.Object):
     """
     org.bluez.GattApplication1 interface implementation
     """
@@ -56,6 +58,8 @@ class Application(dbus.service.Object):
         self.add_service(DeviceInfoService(bus))
         self.add_service(BatteryService(bus))
 
+        self.tivo_ruc_dlg = TivoRcuDlg(self.onKeyEvent)
+
         self.online = False
         self.KeyEventMonitor = KeyEventMonitor(self.onKeyEvent, self.onExit)
         self.KeyEventMonitor.start()
@@ -64,7 +68,7 @@ class Application(dbus.service.Object):
         return dbus.ObjectPath(self.path)
 
     def service_registered_cb(self, obj_path):
-        print(f"Application.service_registered_cb get {obj_path}")
+        print(f"TivoRCUService.service_registered_cb get {obj_path}")
         self.all_services_registered = True
         if self.all_services_registered_cb != None:
             self.all_services_registered_cb(obj_path)
@@ -94,6 +98,10 @@ class Application(dbus.service.Object):
 
     def set_online(self, online):
         self.online = online
+        if self.online == True:
+            self.tivo_ruc_dlg.show()
+        else:
+            self.tivo_ruc_dlg.hide()
 
     def get_all_services_registered(self):
         return self.all_services_registered
@@ -102,15 +110,15 @@ class Application(dbus.service.Object):
         self.all_services_registered = False
     
     def set_all_services_registered_cb(self, cb):
-        print(f"Application.set_all_services_registered_cb called")
+        print(f"TivoRCUService.set_all_services_registered_cb called")
         self.all_services_registered_cb = cb
 
     def onExit(self):
         closeAll()
 
-    def onKeyEvent(self, key_event):
+    def onKeyEvent(self, key_event_name):
         if self.online:
-            self.hid_service.onKeyEvent(key_event)
+            self.hid_service.onKeyEvent(key_event_name)
         else:
             pass
 
@@ -140,9 +148,9 @@ def update_state(path):
         
     print(f"update_state, path = {path}, connected_state = {connected_state}")
 
-    global g_application
+    global g_tivo_rcu_service
     if connected_state == True:
-        if g_application.get_all_services_registered():
+        if g_tivo_rcu_service.get_all_services_registered():
             g_main_state = MainState.CONNECTED
         else:
             g_main_state = MainState.CONNECTING
@@ -150,18 +158,18 @@ def update_state(path):
         g_main_state = MainState.ADVERTISING
 
     if g_main_state == MainState.ADVERTISING:
-        g_application.set_online(False)
-        print("Application is not ready, into advertising state")
+        g_tivo_rcu_service.set_online(False)
+        print("TivoRCUService is not ready, into advertising state")
         start_advertising()
     elif g_main_state == MainState.CONNECTING:
-        g_application.set_online(False)
+        g_tivo_rcu_service.set_online(False)
         stop_advertising()
         print("Now is connecting ...")
     elif g_main_state == MainState.CONNECTED:
         stop_advertising()
-        g_application.set_online(True)
+        g_tivo_rcu_service.set_online(True)
         print(
-            "Application is ready, press any key to send the events.. (press q to exit")
+            "TivoRCUService is ready, press any key to send the events.. (press q to exit")
         
 
 """
@@ -173,8 +181,8 @@ def properties_changed(interface, changed, invalidated, path):
         if ("Connected" in changed):
             print(f"properties_changed called with Connected property, path = {path}")
             if changed["Connected"] == 0: # mean from connected to disconnected, we need to reset services to unregistered
-                print("call g_application.set_all_services_unregistered()")
-                g_application.set_all_services_unregistered()
+                print("call g_tivo_rcu_service.set_all_services_unregistered()")
+                g_tivo_rcu_service.set_all_services_unregistered()
             update_state(path)
 
 """
@@ -228,9 +236,9 @@ def stop_advertising():
 
 def closeAll():
     stop_advertising()
-    global g_mainloop
-    if g_mainloop != None:
-        g_mainloop.quit()
+    global g_core_application
+    if g_core_application != None:
+        g_core_application.quit()
 
 def main():
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
@@ -285,16 +293,17 @@ def main():
         bus.get_object(bluetooth_constants.BLUEZ_SERVICE_NAME, adapter_obj),
         bluetooth_constants.GATT_MANAGER_INTERFACE)
 
-    global g_application
-    g_application = Application(bus)
-    g_application.set_all_services_registered_cb(application_all_services_registered_cb)
-    gatt_service_manager.RegisterApplication(g_application.get_path(), {},
+    global g_core_application
+    g_core_application = QtWidgets.QApplication([])
+
+    global g_tivo_rcu_service
+    g_tivo_rcu_service = TivoRCUService(bus)
+    g_tivo_rcu_service.set_all_services_registered_cb(application_all_services_registered_cb)
+    gatt_service_manager.RegisterApplication(g_tivo_rcu_service.get_path(), {},
                                              reply_handler=register_app_cb,
                                              error_handler=register_app_error_cb)
 
-    global g_mainloop
-    g_mainloop = GLib.MainLoop()
-    g_mainloop.run()
+    g_core_application.exec_()
     print('5. Process end')
 
 

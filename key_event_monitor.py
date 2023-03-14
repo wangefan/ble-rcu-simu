@@ -13,14 +13,15 @@ class KeyEventMonitor(threading.Thread):
         while True:
             # Wait for the next event.
             event = keyboard.read_event()
+            #print(f'KeyEventMonitor, current event: {event.name}')
             if event.event_type == keyboard.KEY_UP:
                 if event.name == 'q':
                     print('stop monitor key events')
                     break
                 else:
                     if self.key_event_listener != None:
-                        self.key_event_listener(event)
+                        self.key_event_listener(event.name)
 
         if self.key_exit_listener != None:
-                        self.key_exit_listener()
+            self.key_exit_listener()
         

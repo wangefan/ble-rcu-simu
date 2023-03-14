@@ -3,6 +3,7 @@ import dbus.service
 import bluetooth_constants
 from gi.repository import GLib
 from ble_base import Descriptor, Characteristic, Service
+from key_event_name import *
 
 REPORT_MAP = bytes((
     # Standard keyboard buttons
@@ -435,12 +436,17 @@ class ConsumerCharacteristic(Characteristic):
         self.value = [dbus.Byte(0x00), dbus.Byte(
             0x00), dbus.Byte(0x00), dbus.Byte(0x00)]
 
-    def send(self, key_code):
-        print(f'ConsumerCharacteristic, send keyCode: {key_code}')
+    def send(self, key_code_array):
+        scan_code_press = [dbus.Byte(key_code) for key_code in key_code_array]
+        scan_code_release = [dbus.Byte(0x00) for i in key_code_array]
+        print(
+            f'ConsumerCharacteristic, send scan_code_press: {scan_code_press}')
+        print(
+            f'ConsumerCharacteristic, send scan_code_release: {scan_code_release}')
         self.PropertiesChanged(bluetooth_constants.GATT_CHARACTERISTIC_INTERFACE, {
-                               'Value': [dbus.Byte(key_code), dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00)]}, [])
+                               'Value': scan_code_press}, [])
         self.PropertiesChanged(bluetooth_constants.GATT_CHARACTERISTIC_INTERFACE, {
-                               'Value': [dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00)]}, [])
+                               'Value': scan_code_release}, [])
         print(f'ConsumerCharacteristic, sent')
         return True
 
@@ -528,14 +534,17 @@ class STDKeyboardCharacteristic(Characteristic):
         self.value = [dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00), 
                       dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00)]
         
-    def send(self, key_code):
-        print(f'STDKeyboardCharacteristic, send keyCode: {key_code}')
+    def send(self, key_code_array):
+        scan_code_press = [dbus.Byte(key_code) for key_code in key_code_array]
+        scan_code_release = [dbus.Byte(0x00) for i in key_code_array]
+        print(
+            f'STDKeyboardCharacteristic, send scan_code_press: {scan_code_press}')
+        print(
+            f'STDKeyboardCharacteristic, send scan_code_release: {scan_code_release}')
         self.PropertiesChanged(bluetooth_constants.GATT_CHARACTERISTIC_INTERFACE, {
-                               'Value': [dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(key_code), dbus.Byte(0x00),
-                                         dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00)]}, [])
+                               'Value': scan_code_press}, [])
         self.PropertiesChanged(bluetooth_constants.GATT_CHARACTERISTIC_INTERFACE, {
-                               'Value': [dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00),
-                                         dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00)]}, [])
+                               'Value': scan_code_release}, [])
         print(f'STDKeyboardCharacteristic, sent')
         return True
 
@@ -560,26 +569,50 @@ KEY_REPORT_ID = "key_report_id"
 KEY_REPORT_ID_CONSUMER = 0x0C
 KEY_REPORT_ID_STANDARD_KEYBOARD = 0x01
 KEK_MAP = {
-    'left': {KEY_CODE: 0x44, KEY_REPORT_ID: KEY_REPORT_ID_CONSUMER},  # key left
-    'right': {KEY_CODE: 0x45, KEY_REPORT_ID: KEY_REPORT_ID_CONSUMER}, # key right
-    'up': {KEY_CODE: 0x42, KEY_REPORT_ID: KEY_REPORT_ID_CONSUMER},    # key up
-    'down': {KEY_CODE: 0x43, KEY_REPORT_ID: KEY_REPORT_ID_CONSUMER},  # key down
-    'help': {KEY_CODE: 0xe9, KEY_REPORT_ID: KEY_REPORT_ID_CONSUMER},  # key volume up
-    'f14': {KEY_CODE: 0xea, KEY_REPORT_ID: KEY_REPORT_ID_CONSUMER},   # key volume down
-    'tivo': {KEY_CODE: 0x3d, KEY_REPORT_ID: KEY_REPORT_ID_CONSUMER},  # key tivo
-    'apps': {KEY_CODE: 0x3e, KEY_REPORT_ID: KEY_REPORT_ID_CONSUMER},  # key apps
-    'mute': {KEY_CODE: 0xe2, KEY_REPORT_ID: KEY_REPORT_ID_CONSUMER},  # key mute
-    'power': {KEY_CODE: 0x30, KEY_REPORT_ID: KEY_REPORT_ID_CONSUMER},  # key power
-    '0': {KEY_CODE: 0x27, KEY_REPORT_ID: KEY_REPORT_ID_STANDARD_KEYBOARD},  # key 0
-    '1': {KEY_CODE: 0x1e, KEY_REPORT_ID: KEY_REPORT_ID_STANDARD_KEYBOARD},  # key 1
-    '2': {KEY_CODE: 0x1f, KEY_REPORT_ID: KEY_REPORT_ID_STANDARD_KEYBOARD},  # key 2
-    '3': {KEY_CODE: 0x20, KEY_REPORT_ID: KEY_REPORT_ID_STANDARD_KEYBOARD},  # key 3
-    '4': {KEY_CODE: 0x21, KEY_REPORT_ID: KEY_REPORT_ID_STANDARD_KEYBOARD},  # key 4
-    '5': {KEY_CODE: 0x22, KEY_REPORT_ID: KEY_REPORT_ID_STANDARD_KEYBOARD},  # key 5
-    '6': {KEY_CODE: 0x23, KEY_REPORT_ID: KEY_REPORT_ID_STANDARD_KEYBOARD},  # key 6
-    '7': {KEY_CODE: 0x24, KEY_REPORT_ID: KEY_REPORT_ID_STANDARD_KEYBOARD},  # key 7
-    '8': {KEY_CODE: 0x25, KEY_REPORT_ID: KEY_REPORT_ID_STANDARD_KEYBOARD},  # key 8
-    '9': {KEY_CODE: 0x26, KEY_REPORT_ID: KEY_REPORT_ID_STANDARD_KEYBOARD},  # key 9
+    # key left
+    KEY_EVENT_NAME_LEFT: {KEY_CODE: [0x44, 0x00, 0x00, 0x00], KEY_REPORT_ID: KEY_REPORT_ID_CONSUMER},
+    # key right
+    KEY_EVENT_NAME_RIGHT: {KEY_CODE: [0x45, 0x00, 0x00, 0x00], KEY_REPORT_ID: KEY_REPORT_ID_CONSUMER},
+    # key up
+    KEY_EVENT_NAME_UP: {KEY_CODE: [0x42, 0x00, 0x00, 0x00], KEY_REPORT_ID: KEY_REPORT_ID_CONSUMER},
+    # key down
+    KEY_EVENT_NAME_DOWN: {KEY_CODE: [0x43, 0x00, 0x00, 0x00], KEY_REPORT_ID: KEY_REPORT_ID_CONSUMER},
+    # key select
+    KEY_EVENT_NAME_SEL: {KEY_CODE: [0x41, 0x00, 0x00, 0x00], KEY_REPORT_ID: KEY_REPORT_ID_CONSUMER},
+    # key volume up
+    KEY_EVENT_NAME_VOLUP: {KEY_CODE: [0xe9, 0x00, 0x00, 0x00], KEY_REPORT_ID: KEY_REPORT_ID_CONSUMER},
+    # key volume down
+    KEY_EVENT_NAME_VOLDW: {KEY_CODE: [0xea, 0x00, 0x00, 0x00], KEY_REPORT_ID: KEY_REPORT_ID_CONSUMER},
+    # key tivo
+    KEY_EVENT_NAME_TIVO: {KEY_CODE: [0x3d, 0x00, 0x00, 0x00], KEY_REPORT_ID: KEY_REPORT_ID_CONSUMER},
+    # key apps
+    KEY_EVENT_NAME_APPS: {KEY_CODE: [0x3e, 0x00, 0x00, 0x00], KEY_REPORT_ID: KEY_REPORT_ID_CONSUMER},
+    # key mute
+    KEY_EVENT_NAME_MUTE: {KEY_CODE: [0xe2, 0x00, 0x00, 0x00], KEY_REPORT_ID: KEY_REPORT_ID_CONSUMER},
+    # key power
+    KEY_EVENT_NAME_POWER: {KEY_CODE: [0x30, 0x00, 0x00, 0x00], KEY_REPORT_ID: KEY_REPORT_ID_CONSUMER},
+    # key back
+    KEY_EVENT_NAME_BACK: {KEY_CODE: [0x24, 0x02, 0x00, 0x00], KEY_REPORT_ID: KEY_REPORT_ID_CONSUMER},
+    # key 0
+    KEY_EVENT_NAME_0: {KEY_CODE: [0x00, 0x00, 0x27, 0x00, 0x00, 0x00, 0x00, 0x00], KEY_REPORT_ID: KEY_REPORT_ID_STANDARD_KEYBOARD},
+    # key 1
+    KEY_EVENT_NAME_1: {KEY_CODE: [0x00, 0x00, 0x1e, 0x00, 0x00, 0x00, 0x00, 0x00], KEY_REPORT_ID: KEY_REPORT_ID_STANDARD_KEYBOARD},
+    # key 2
+    KEY_EVENT_NAME_2: {KEY_CODE: [0x00, 0x00, 0x1f, 0x00, 0x00, 0x00, 0x00, 0x00], KEY_REPORT_ID: KEY_REPORT_ID_STANDARD_KEYBOARD},
+    # key 3
+    KEY_EVENT_NAME_3: {KEY_CODE: [0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00], KEY_REPORT_ID: KEY_REPORT_ID_STANDARD_KEYBOARD},
+    # key 4
+    KEY_EVENT_NAME_4: {KEY_CODE: [0x00, 0x00, 0x21, 0x00, 0x00, 0x00, 0x00, 0x00], KEY_REPORT_ID: KEY_REPORT_ID_STANDARD_KEYBOARD},
+    # key 5
+    KEY_EVENT_NAME_5: {KEY_CODE: [0x00, 0x00, 0x22, 0x00, 0x00, 0x00, 0x00, 0x00], KEY_REPORT_ID: KEY_REPORT_ID_STANDARD_KEYBOARD},
+    # key 6
+    KEY_EVENT_NAME_6: {KEY_CODE: [0x00, 0x00, 0x23, 0x00, 0x00, 0x00, 0x00, 0x00], KEY_REPORT_ID: KEY_REPORT_ID_STANDARD_KEYBOARD},
+    # key 7
+    KEY_EVENT_NAME_7: {KEY_CODE: [0x00, 0x00, 0x24, 0x00, 0x00, 0x00, 0x00, 0x00], KEY_REPORT_ID: KEY_REPORT_ID_STANDARD_KEYBOARD},
+    # key 8
+    KEY_EVENT_NAME_8: {KEY_CODE: [0x00, 0x00, 0x25, 0x00, 0x00, 0x00, 0x00, 0x00], KEY_REPORT_ID: KEY_REPORT_ID_STANDARD_KEYBOARD},
+    # key 9
+    KEY_EVENT_NAME_9: {KEY_CODE: [0x00, 0x00, 0x26, 0x00, 0x00, 0x00, 0x00, 0x00], KEY_REPORT_ID: KEY_REPORT_ID_STANDARD_KEYBOARD},
 }
 
 
@@ -600,7 +633,7 @@ class HIDService(Service):
         self.controlPoint = ControlPointCharacteristic(bus, 2, self)
         self.reportMap = ReportMapCharacteristic(bus, 3, self)
         self.reportConsumer = ConsumerCharacteristic(bus, 4, self)
-        self.report2 = STDKeyboardCharacteristic(bus, 5, self)
+        self.reportSTDKeyboard = STDKeyboardCharacteristic(bus, 5, self)
 
         global g_service_registered_cb
         g_service_registered_cb = service_registered_cb
@@ -610,13 +643,13 @@ class HIDService(Service):
         self.add_characteristic(self.controlPoint)
         self.add_characteristic(self.reportMap)
         self.add_characteristic(self.reportConsumer)
-        self.add_characteristic(self.report2)
+        self.add_characteristic(self.reportSTDKeyboard)
 
-    def onKeyEvent(self, key_event):
-        key_info = KEK_MAP.get(key_event.name)
+    def onKeyEvent(self, key_event_name):
+        key_info = KEK_MAP.get(key_event_name)
         #print(f'key_info:{key_info}')
         if key_info != None:
             if key_info[KEY_REPORT_ID] == KEY_REPORT_ID_CONSUMER:
                 self.reportConsumer.send(key_info[KEY_CODE])
             elif key_info[KEY_REPORT_ID] == KEY_REPORT_ID_STANDARD_KEYBOARD:
-                self.report2.send(key_info[KEY_CODE])
+                self.reportSTDKeyboard.send(key_info[KEY_CODE])
