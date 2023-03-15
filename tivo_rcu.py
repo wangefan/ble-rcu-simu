@@ -24,6 +24,11 @@ class TivoRcuDlg(QtWidgets.QDialog):
         self.ui.mTivo.clicked.connect(self.tivoClicked)
         self.ui.mNum1.clicked.connect(self.num1Clicked)
 
+    # override
+    def closeEvent(self, event):
+        print("TivoRcuDlg.closeEvent")
+        event.ignore()
+
     def powerClicked(self):
         if self.key_event_listener != None:
             self.key_event_listener(KEY_EVENT_NAME_POWER)
