@@ -22,12 +22,16 @@ class TivoRcuDlg(QtWidgets.QDialog):
         self.ui.mVolUp.clicked.connect(self.volUpClicked)
         self.ui.mVolDown.clicked.connect(self.volDownClicked)
         self.ui.mTivo.clicked.connect(self.tivoClicked)
+        self.ui.mNum0.clicked.connect(self.num0Clicked)
         self.ui.mNum1.clicked.connect(self.num1Clicked)
-
-    # override
-    def closeEvent(self, event):
-        print("TivoRcuDlg.closeEvent")
-        event.ignore()
+        self.ui.mNum2.clicked.connect(self.num2Clicked)
+        self.ui.mNum3.clicked.connect(self.num3Clicked)
+        self.ui.mNum4.clicked.connect(self.num4Clicked)
+        self.ui.mNum5.clicked.connect(self.num5Clicked)
+        self.ui.mNum6.clicked.connect(self.num6Clicked)
+        self.ui.mNum7.clicked.connect(self.num7Clicked)
+        self.ui.mNum8.clicked.connect(self.num8Clicked)
+        self.ui.mNum9.clicked.connect(self.num9Clicked)
 
     def powerClicked(self):
         if self.key_event_listener != None:
@@ -69,6 +73,42 @@ class TivoRcuDlg(QtWidgets.QDialog):
         if self.key_event_listener != None:
             self.key_event_listener(KEY_EVENT_NAME_TIVO)
 
+    def num0Clicked(self):
+        if self.key_event_listener != None:
+            self.key_event_listener(KEY_EVENT_NAME_0)
+
     def num1Clicked(self):
         if self.key_event_listener != None:
             self.key_event_listener(KEY_EVENT_NAME_1)
+
+    def num2Clicked(self):
+        if self.key_event_listener != None:
+            self.key_event_listener(KEY_EVENT_NAME_2)
+
+    def num3Clicked(self):
+        if self.key_event_listener != None:
+            self.key_event_listener(KEY_EVENT_NAME_3)
+
+    def num4Clicked(self):
+        if self.key_event_listener != None:
+            self.key_event_listener(KEY_EVENT_NAME_4)
+
+    def num5Clicked(self):
+        if self.key_event_listener != None:
+            self.key_event_listener(KEY_EVENT_NAME_5)
+
+    def num6Clicked(self):
+        if self.key_event_listener != None:
+            self.key_event_listener(KEY_EVENT_NAME_6)
+
+    def num7Clicked(self):
+        if self.key_event_listener != None:
+            self.key_event_listener(KEY_EVENT_NAME_7)
+
+    def num8Clicked(self):
+        if self.key_event_listener != None:
+            self.key_event_listener(KEY_EVENT_NAME_8)
+
+    def num9Clicked(self):
+        if self.key_event_listener != None:
+            self.key_event_listener(KEY_EVENT_NAME_9)
