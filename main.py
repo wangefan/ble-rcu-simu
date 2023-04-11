@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+from ble_voice_service import VoiceService
 import bluetooth_constants
 import dbus.mainloop.glib
 from gi.repository import GLib
@@ -11,6 +12,7 @@ from ble_hogp import DeviceInfoService, BatteryService, HIDService
 from key_event_monitor import KeyEventMonitor
 from enum import Enum
 from PyQt5 import QtCore, QtWidgets
+from key_event_name import KEY_EVENT_NAME_VOICE
 from tivo_rcu import TivoRcuDlg
 
 
@@ -54,7 +56,9 @@ class TivoRCUService(dbus.service.Object):
         self.all_services_registered = False
         self.all_services_registered_cb = None
         self.hid_service = HIDService(bus, self.service_registered_cb)
+        self.voice_service = VoiceService(bus)
         self.add_service(self.hid_service)
+        self.add_service(self.voice_service)
         self.add_service(DeviceInfoService(bus))
         self.add_service(BatteryService(bus))
 
@@ -119,6 +123,8 @@ class TivoRCUService(dbus.service.Object):
     def onKeyEvent(self, key_event_name):
         if self.online:
             self.hid_service.onKeyEvent(key_event_name)
+            if KEY_EVENT_NAME_VOICE == key_event_name:
+                self.voice_service.VoiceSearch()
         else:
             pass
 

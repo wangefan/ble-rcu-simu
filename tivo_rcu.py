@@ -22,6 +22,7 @@ class TivoRcuDlg(QtWidgets.QDialog):
         self.ui.mVolUp.clicked.connect(self.volUpClicked)
         self.ui.mVolDown.clicked.connect(self.volDownClicked)
         self.ui.mTivo.clicked.connect(self.tivoClicked)
+        self.ui.mVoice.clicked.connect(self.voiceClicked)
         self.ui.mNum0.clicked.connect(self.num0Clicked)
         self.ui.mNum1.clicked.connect(self.num1Clicked)
         self.ui.mNum2.clicked.connect(self.num2Clicked)
@@ -72,6 +73,10 @@ class TivoRcuDlg(QtWidgets.QDialog):
     def tivoClicked(self):
         if self.key_event_listener != None:
             self.key_event_listener(KEY_EVENT_NAME_TIVO)
+
+    def voiceClicked(self):
+        if self.key_event_listener != None:
+            self.key_event_listener(KEY_EVENT_NAME_VOICE)
 
     def num0Clicked(self):
         if self.key_event_listener != None:
