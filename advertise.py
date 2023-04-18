@@ -97,7 +97,7 @@ class Advertisement(dbus.service.Object):
         print("%s: Released!" % self.path)
 
 class RCUAdvertisement(Advertisement):
-    DISCOVERABLE_NAME_BASE = "Tivo Sim RCU"
+    
     BASE_PATH = bluetooth_constants.BLUEZ_OBJ_ROOT + "advertisement"
     def __init__(self, bus, mac_address, index):
         Advertisement.__init__(self, bus, self.BASE_PATH, index, "peripheral")
@@ -107,7 +107,8 @@ class RCUAdvertisement(Advertisement):
         self.add_manufacturer_data(
             0xFFFF, [0x70, 0x74],
         )
-        discoverable_name = "{} [{}]".format(self.DISCOVERABLE_NAME_BASE, mac_address)
+        discoverable_name = "{} [{}]".format(
+            bluetooth_constants.DISCOVERABLE_NAME_BASE, mac_address)
         self.add_local_name(discoverable_name)
         self.add_discoverable(True)
         self.include_tx_power = True

@@ -275,6 +275,9 @@ def main():
                       bluetooth_constants.ADAPTER_PROP_DISCOVERABLE, dbus.Boolean(1))
     adapter_props.Set(bluetooth_constants.ADAPTER_INTERFACE,
                       bluetooth_constants.ADAPTER_PROP_PAIRABLE, dbus.Boolean(1))
+    adapter_props.Set(bluetooth_constants.ADAPTER_INTERFACE,
+                      bluetooth_constants.ADAPTER_PROP_ALIAS, dbus.String(
+                          bluetooth_constants.DISCOVERABLE_NAME_BASE))
     mac_address = adapter_props.Get(
         bluetooth_constants.ADAPTER_INTERFACE, bluetooth_constants.ADAPTER_PROP_MAC_ADDRESS)
 
