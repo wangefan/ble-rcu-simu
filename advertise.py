@@ -53,6 +53,11 @@ class Advertisement(dbus.service.Object):
     def get_local_name(self):
         return self.local_name
 
+    def get_advertisement_info(self):
+        advertisement_info = "{} [{}]".format(
+            bluetooth_constants.DISCOVERABLE_NAME_BASE, self.mac_address)
+        return advertisement_info
+
     def add_service_uuid(self, uuid):
         if not self.service_uuids:
             self.service_uuids = []
@@ -107,8 +112,7 @@ class RCUAdvertisement(Advertisement):
         self.add_manufacturer_data(
             0xFFFF, [0x70, 0x74],
         )
-        discoverable_name = "{} [{}]".format(
-            bluetooth_constants.DISCOVERABLE_NAME_BASE, mac_address)
-        self.add_local_name(discoverable_name)
+        self.mac_address = mac_address
+        self.add_local_name(bluetooth_constants.DISCOVERABLE_NAME_BASE)
         self.add_discoverable(True)
         self.include_tx_power = True

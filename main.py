@@ -30,11 +30,11 @@ g_tivo_rcu_service = None
 
 
 def register_ad_cb():
-    print(f"{g_rcu_advertisement.get_local_name()} start advertising.. (press esc to exit")
+    print(f"{g_rcu_advertisement.get_advertisement_info()} start advertising.. (press esc to exit")
 
 def register_ad_error_cb(error):
     if "AlreadyExists" in str(error):
-        print(f"{g_rcu_advertisement.get_local_name()} has already registered, keep advertising.. (press esc to exit")
+        print(f"{g_rcu_advertisement.get_advertisement_info()} has already registered, keep advertising.. (press esc to exit")
     else:
         print(f"Failed to register RCUAdvertisement: {str(error)}, exit!")
         closeAll()
@@ -237,7 +237,7 @@ def stop_advertising():
     except:
         dbus.exceptions.DBusException
         pass
-    print(f"{g_rcu_advertisement.get_local_name()} stop advertising")
+    print(f"{g_rcu_advertisement.get_advertisement_info()} stop advertising")
         
 
 def closeAll():
