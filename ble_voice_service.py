@@ -112,13 +112,12 @@ class VoiceService(Service):
         self.tivo_tv_ctl_char = TivoTvCtlCharacteristic(bus, 2, self)
         self.add_characteristic(self.tivo_tv_ctl_char)
 
-    def NotifyADPCMPktWithHeader(self, adpcm_packet_with_header):
+    # split the adpcm data into chunks with each one 20 bytes,
+    def NotifyADPCMPktWithHeaderWithChunks(self, adpcm_packet_with_header):
         # separate the adpcm data into chunks with each one 20 bytes,
         # and send it sequentially, each chunk will be notified to the client.
         adpcm_chunk_size = 20
         adpcm_data_len = len(adpcm_packet_with_header)
-        print(
-            f'NotifyADPCMPktWithHeader called, length of adpcm_packet_with_header: {adpcm_data_len}')
         chunk_num = adpcm_data_len // adpcm_chunk_size
         idx_chunk = 0
         while idx_chunk < chunk_num:
@@ -133,6 +132,10 @@ class VoiceService(Service):
                                          adpcm_chunk_size:adpcm_data_len]
         self.tivo_tv_rx_char.Notify({'Value': chunk})
 
+    def NotifyADPCMPktWithHeader(self, adpcm_packet_with_header):
+        self.tivo_tv_rx_char.Notify({'Value': adpcm_packet_with_header})
+
+
     # mic_open_params = 1: ADPCM (8Khz/16bit)
     # mic_open_params = 2: ADPCM (16Khz/16bit)
     def CaptureAndSendAudio(self, mic_open_params):
@@ -142,9 +145,9 @@ class VoiceService(Service):
         # Todo:workaround by encode wav file to adpcm, need to implement the real capture and encode
         wave_file = None
         if mic_open_params == 1:
-            wave_file = './audio/decoded_out_8000.wav'
+            wave_file = './audio/decoded_out_launch_nf_8k.wav'
         elif mic_open_params == 2:
-            wave_file = './audio/decoded_out_16000.wav'
+            wave_file = './audio/decoded_out_launch_nf_16k.wav'
         else:
             return
 
@@ -158,28 +161,38 @@ class VoiceService(Service):
             sample_rate = f.getframerate()
             print(
                 f'CaptureAndSendAudio, open file = {wave_file}, n_channels = {n_channels}, sample_width = {sample_width}, sample_rate = {sample_rate}')
-            frames = f.readframes(f.getnframes())
-            adpcm_data, _ = audioop.lin2adpcm(frames, sample_width, None)
+            adpcm_chunk_size = 128
+            adpcm_encode_fac = 4
+            pcm_frame_size = sample_width * n_channels
+            pcm_frames_num = adpcm_chunk_size * adpcm_encode_fac // pcm_frame_size
+            state = (0, 0x00)
+            seq = 0
+            while True:
+                read_pcm_frames = f.readframes(pcm_frames_num)
+                read_pcm_frames_num = len(read_pcm_frames)
+                if read_pcm_frames_num == 0 or read_pcm_frames_num < pcm_frames_num:
+                    break
+                # adpcm_data_with_header will append 6 bytes header and 128 bytes adpcm data.
+                # header structure: [seq hi, seq lo, rcuid, pre predict hi, pre predict lo, pre index]
+                adpcm_data_with_header_bytes = struct.pack(
+                    '>H', seq) + struct.pack('B', 0x00) + struct.pack('>h', state[0]) + struct.pack('B', state[1])
+                adpcm_data_with_header = [
+                    dbus.Byte(b) for b in adpcm_data_with_header_bytes]
+                seq += 1
+                
+                # encode the pcm data to adpcm data
+                adpcm_data, state = audioop.lin2adpcm(
+                    read_pcm_frames, sample_width, state)
+                adpcm_data_with_header.extend(
+                    [dbus.Byte(b) for b in adpcm_data])
+                adpcm_data_with_header_len = len(adpcm_data_with_header)
+                print(f'CaptureAndSendAudio, send seq: {seq}')
+                self.NotifyADPCMPktWithHeader(adpcm_data_with_header)
 
-        chunk_size = 128
-        adpcm_data_len = len(adpcm_data)
-        send_parts_len = adpcm_data_len // chunk_size
-        print(
-            f'CaptureAndSendAudio, adpcm_data_len = {adpcm_data_len}, send_parts_len = {send_parts_len}')
-        for idx in range(send_parts_len):
-            # adpcm_packet_with_header will append 6 bytes header and 128 bytes adpcm data.
-            adpcm_packet_with_header = [dbus.Byte(0x01), dbus.Byte(0x00), dbus.Byte(
-                0x00), dbus.Byte(0x00), dbus.Byte(0x00), dbus.Byte(0x00)]
-            left_end = idx*chunk_size
-            right_end = left_end + chunk_size
-            adpcm_packet_with_header.extend(
-                [dbus.Byte(b) for b in adpcm_data[left_end:right_end]])
-            self.NotifyADPCMPktWithHeader(adpcm_packet_with_header)
-
-        # send the end notification
-        audio_end_byte = struct.pack('>B', RCU_CTL_AUDIO_END)
-        dbus_audio_end_byte = [dbus.Byte(audio_end_byte)]
-        self.tivo_tv_ctl_char.Notify({'Value': dbus_audio_end_byte})
+            # send the end notification
+            audio_end_byte = struct.pack('>B', RCU_CTL_AUDIO_END)
+            dbus_audio_end_byte = [dbus.Byte(audio_end_byte)]
+            self.tivo_tv_ctl_char.Notify({'Value': dbus_audio_end_byte})
 
     def HandleTvTx(self, value, options):
         print(f'HandleTvTx called, value = {value}')
