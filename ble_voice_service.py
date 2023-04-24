@@ -11,6 +11,7 @@ import struct
 
 TV_TX_GET_CAPS = 0x0A
 TV_TX_MIC_OPEN = 0x0C
+TV_TX_MIC_CLOSE = 0x0D
 
 RCU_CTL_GET_CAP_RESP = 0x0B
 RCU_CTL_START_SEARCH = 0x08
@@ -235,6 +236,9 @@ class VoiceService(Service):
                             [mic_open_params]).start()
 
             print(f'HandleTvTx, handle mic open end')
+
+        elif int(command_val) == TV_TX_MIC_CLOSE:
+            print(f'HandleTvTx, handle mic close end')
 
         print(f'HandleTvTx end')
 
