@@ -62,7 +62,7 @@ class TivoRCUService(dbus.service.Object):
         self.add_service(DeviceInfoService(bus))
         self.add_service(BatteryService(bus))
 
-        self.tivo_ruc_dlg = TivoRcuDlg(self.onKeyEvent)
+        self.tivo_ruc_dlg = TivoRcuDlg(self.onKeyEvent, self.onCaptureKeyboard)
 
         self.online = False
         self.KeyEventMonitor = KeyEventMonitor(self.onKeyEvent, self.onExit)
@@ -127,6 +127,10 @@ class TivoRCUService(dbus.service.Object):
                 self.voice_service.VoiceSearch()
         else:
             pass
+
+    def onCaptureKeyboard(self, b_capture):
+        self.KeyEventMonitor.setCaptureKeyboard(b_capture)
+
 
 def register_app_cb():
     print('4. Registered GATT application ok')

@@ -4,12 +4,13 @@ from key_event_name import *
 
 
 class TivoRcuDlg(QtWidgets.QDialog):
-    def __init__(self, key_event_listener):
+    def __init__(self, key_event_listener, capture_keyboard_listener):
         super(TivoRcuDlg, self).__init__()
         self.ui = Ui_TivoRcuDlg()
         self.ui.setupUi(self)
         self.setup_control()
         self.key_event_listener = key_event_listener
+        self.capture_keyboard_listener = capture_keyboard_listener
 
     def setup_control(self):
         self.ui.mPower.clicked.connect(self.powerClicked)
@@ -23,6 +24,8 @@ class TivoRcuDlg(QtWidgets.QDialog):
         self.ui.mVolDown.clicked.connect(self.volDownClicked)
         self.ui.mTivo.clicked.connect(self.tivoClicked)
         self.ui.mVoice.clicked.connect(self.voiceClicked)
+        self.ui.mCkbCaptureKeyboard.stateChanged.connect(
+            self.captureKeyboardClicked)
         self.ui.mNum0.clicked.connect(self.num0Clicked)
         self.ui.mNum1.clicked.connect(self.num1Clicked)
         self.ui.mNum2.clicked.connect(self.num2Clicked)
@@ -77,6 +80,11 @@ class TivoRcuDlg(QtWidgets.QDialog):
     def voiceClicked(self):
         if self.key_event_listener != None:
             self.key_event_listener(KEY_EVENT_NAME_VOICE)
+
+    def captureKeyboardClicked(self):
+        bCaptureKeyboard = self.ui.mCkbCaptureKeyboard.isChecked()
+        if self.capture_keyboard_listener != None:
+            self.capture_keyboard_listener(bCaptureKeyboard)
 
     def num0Clicked(self):
         if self.key_event_listener != None:

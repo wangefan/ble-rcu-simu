@@ -13,7 +13,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_TivoRcuDlg(object):
     def setupUi(self, TivoRcuDlg):
         TivoRcuDlg.setObjectName("TivoRcuDlg")
-        TivoRcuDlg.resize(298, 442)
+        TivoRcuDlg.resize(294, 486)
         self.mDPadRight = QtWidgets.QPushButton(TivoRcuDlg)
         self.mDPadRight.setGeometry(QtCore.QRect(180, 70, 31, 31))
         self.mDPadRight.setAutoRepeatDelay(306)
@@ -104,7 +104,7 @@ class Ui_TivoRcuDlg(object):
         self.mPower.setAutoRepeatDelay(306)
         self.mPower.setObjectName("mPower")
         self.info = QtWidgets.QLabel(TivoRcuDlg)
-        self.info.setGeometry(QtCore.QRect(40, 420, 231, 20))
+        self.info.setGeometry(QtCore.QRect(40, 460, 231, 20))
         font = QtGui.QFont()
         font.setBold(True)
         self.info.setFont(font)
@@ -113,6 +113,9 @@ class Ui_TivoRcuDlg(object):
         self.mVoice.setGeometry(QtCore.QRect(180, 160, 51, 41))
         self.mVoice.setAutoRepeatDelay(306)
         self.mVoice.setObjectName("mVoice")
+        self.mCkbCaptureKeyboard = QtWidgets.QCheckBox(TivoRcuDlg)
+        self.mCkbCaptureKeyboard.setGeometry(QtCore.QRect(70, 420, 151, 23))
+        self.mCkbCaptureKeyboard.setObjectName("mCkbCaptureKeyboard")
 
         self.retranslateUi(TivoRcuDlg)
         QtCore.QMetaObject.connectSlotsByName(TivoRcuDlg)
@@ -144,3 +147,4 @@ class Ui_TivoRcuDlg(object):
         self.mPower.setText(_translate("TivoRcuDlg", "P"))
         self.info.setText(_translate("TivoRcuDlg", "Press keyboard \"Esc\" to exit .."))
         self.mVoice.setText(_translate("TivoRcuDlg", "Voice"))
+        self.mCkbCaptureKeyboard.setText(_translate("TivoRcuDlg", "Capture Keyboard"))

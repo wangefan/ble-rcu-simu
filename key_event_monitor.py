@@ -7,6 +7,10 @@ class KeyEventMonitor(threading.Thread):
         threading.Thread.__init__(self)
         self.key_event_listener = key_event_listener
         self.key_exit_listener = key_exit_listener
+        self.b_capture_keyboard = False
+
+    def setCaptureKeyboard(self, bCaptureKeyboard):
+        self.b_capture_keyboard = bCaptureKeyboard
 
     def run(self):
         print('KeyEventMonitor thread start to run')
@@ -19,7 +23,7 @@ class KeyEventMonitor(threading.Thread):
                     print('stop monitor key events')
                     break
                 else:
-                    if self.key_event_listener != None:
+                    if self.key_event_listener != None and self.b_capture_keyboard:
                         self.key_event_listener(event.name)
 
         if self.key_exit_listener != None:
