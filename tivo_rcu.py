@@ -2,6 +2,8 @@ from PyQt5 import QtWidgets
 from tivo_rcu_ui import Ui_TivoRcuDlg
 from key_event_name import *
 
+import time
+import threading
 
 class TivoRcuDlg(QtWidgets.QDialog):
     def __init__(self, key_event_listener, capture_keyboard_listener):
@@ -14,14 +16,20 @@ class TivoRcuDlg(QtWidgets.QDialog):
 
     def setup_control(self):
         self.ui.mPower.clicked.connect(self.powerClicked)
-        self.ui.mDPadLeft.clicked.connect(self.dpadLeftClicked)
-        self.ui.mDPadRight.clicked.connect(self.dpadRightClicked)
-        self.ui.mDPadUp.clicked.connect(self.dpadUpClicked)
-        self.ui.mDPadDown.clicked.connect(self.dpadDownClicked)
+        self.ui.mDPadLeft.pressed.connect(self.dpadLeftPressed)
+        self.ui.mDPadLeft.released.connect(self.dpadLeftReleased)
+        self.ui.mDPadRight.pressed.connect(self.dpadRightPressed)
+        self.ui.mDPadRight.released.connect(self.dpadRightReleased)
+        self.ui.mDPadUp.pressed.connect(self.dpadUpPressed)
+        self.ui.mDPadUp.released.connect(self.dpadUpReleased)
+        self.ui.mDPadDown.pressed.connect(self.dpadDownPressed)
+        self.ui.mDPadDown.released.connect(self.dpadDownReleased)
         self.ui.mDPadOk.clicked.connect(self.dpadOkClicked)
         self.ui.mBack.clicked.connect(self.backClicked)
-        self.ui.mVolUp.clicked.connect(self.volUpClicked)
-        self.ui.mVolDown.clicked.connect(self.volDownClicked)
+        self.ui.mVolUp.pressed.connect(self.dpadVolUpPressed)
+        self.ui.mVolUp.released.connect(self.dpadVolUpReleased)
+        self.ui.mVolDown.pressed.connect(self.dpadVolDownPressed)
+        self.ui.mVolDown.released.connect(self.dpadVolDownReleased)
         self.ui.mTivo.clicked.connect(self.tivoClicked)
         self.ui.mVoice.clicked.connect(self.voiceClicked)
         self.ui.mCkbCaptureKeyboard.stateChanged.connect(
@@ -37,37 +45,68 @@ class TivoRcuDlg(QtWidgets.QDialog):
         self.ui.mNum8.clicked.connect(self.num8Clicked)
         self.ui.mNum9.clicked.connect(self.num9Clicked)
 
+    def setupThread(self, key_event_name):
+        if self.key_event_listener != None:
+            self.thread = threading.Thread(target=self.sendKey, args=(key_event_name,))
+            self.thread.start()
+
+    def sendKey(self, key_event_name):
+        self.pressed = True
+        while self.pressed:
+            self.key_event_listener(key_event_name)
+            self.key_event_listener(KEY_EVENT_NAME_RELEASE)
+            if key_event_name == KEY_EVENT_NAME_VOLUP or key_event_name == KEY_EVENT_NAME_VOLDW:
+                time.sleep(0.15)
+            else:
+                time.sleep(0.5)
+
+    def destroyThread(self):
+        self.pressed = False
+        self.thread.join()
+
+    def dpadLeftPressed(self):
+        self.setupThread(KEY_EVENT_NAME_LEFT)
+
+    def dpadLeftReleased(self):
+        self.destroyThread()
+
+    def dpadRightPressed(self):
+        self.setupThread(KEY_EVENT_NAME_RIGHT)
+
+    def dpadRightReleased(self):
+        self.destroyThread()
+
+    def dpadUpPressed(self):
+        self.setupThread(KEY_EVENT_NAME_UP)
+
+    def dpadUpReleased(self):
+        self.destroyThread()
+
+    def dpadDownPressed(self):
+        self.setupThread(KEY_EVENT_NAME_DOWN)
+
+    def dpadDownReleased(self):
+        self.destroyThread()
+
+    def dpadVolUpPressed(self):
+        self.setupThread(KEY_EVENT_NAME_VOLUP)
+
+    def dpadVolUpReleased(self):
+        self.destroyThread()
+
+    def dpadVolDownPressed(self):
+        self.setupThread(KEY_EVENT_NAME_VOLDW)
+
+    def dpadVolDownReleased(self):
+        self.destroyThread()
+
     def powerClicked(self):
         if self.key_event_listener != None:
             self.key_event_listener(KEY_EVENT_NAME_POWER)
 
-    def dpadLeftClicked(self):
-        if self.key_event_listener != None:
-            self.key_event_listener(KEY_EVENT_NAME_LEFT)
-
-    def dpadRightClicked(self):
-        if self.key_event_listener != None:
-            self.key_event_listener(KEY_EVENT_NAME_RIGHT)
-
-    def dpadUpClicked(self):
-        if self.key_event_listener != None:
-            self.key_event_listener(KEY_EVENT_NAME_UP)
-
-    def dpadDownClicked(self):
-        if self.key_event_listener != None:
-            self.key_event_listener(KEY_EVENT_NAME_DOWN)
-
     def dpadOkClicked(self):
         if self.key_event_listener != None:
             self.key_event_listener(KEY_EVENT_NAME_SEL)
-
-    def volUpClicked(self):
-        if self.key_event_listener != None:
-            self.key_event_listener(KEY_EVENT_NAME_VOLUP)
-
-    def volDownClicked(self):
-        if self.key_event_listener != None:
-            self.key_event_listener(KEY_EVENT_NAME_VOLDW)
 
     def backClicked(self):
         if self.key_event_listener != None:

@@ -437,16 +437,11 @@ class ConsumerCharacteristic(Characteristic):
             0x00), dbus.Byte(0x00), dbus.Byte(0x00)]
 
     def send(self, key_code_array):
-        scan_code_press = [dbus.Byte(key_code) for key_code in key_code_array]
-        scan_code_release = [dbus.Byte(0x00) for i in key_code_array]
+        scan_code = [dbus.Byte(key_code) for key_code in key_code_array]
         print(
-            f'ConsumerCharacteristic, send scan_code_press: {scan_code_press}')
-        print(
-            f'ConsumerCharacteristic, send scan_code_release: {scan_code_release}')
+            f'ConsumerCharacteristic, send scan_code: {scan_code}')
         self.PropertiesChanged(bluetooth_constants.GATT_CHARACTERISTIC_INTERFACE, {
-                               'Value': scan_code_press}, [])
-        self.PropertiesChanged(bluetooth_constants.GATT_CHARACTERISTIC_INTERFACE, {
-                               'Value': scan_code_release}, [])
+                               'Value': scan_code}, [])
         print(f'ConsumerCharacteristic, sent')
         return True
 
@@ -595,6 +590,8 @@ KEK_MAP = {
     KEY_EVENT_NAME_POWER: {KEY_CODE: [0x30, 0x00, 0x00, 0x00], KEY_REPORT_ID: KEY_REPORT_ID_CONSUMER},
     # key back
     KEY_EVENT_NAME_BACK: {KEY_CODE: [0x24, 0x02, 0x00, 0x00], KEY_REPORT_ID: KEY_REPORT_ID_CONSUMER},
+    # key release
+    KEY_EVENT_NAME_RELEASE : {KEY_CODE: [0x00, 0x00, 0x00, 0x00], KEY_REPORT_ID: KEY_REPORT_ID_CONSUMER},
     # key 0
     KEY_EVENT_NAME_0: {KEY_CODE: [0x00, 0x00, 0x27, 0x00, 0x00, 0x00, 0x00, 0x00], KEY_REPORT_ID: KEY_REPORT_ID_STANDARD_KEYBOARD},
     # key 1
