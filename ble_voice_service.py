@@ -146,9 +146,9 @@ class VoiceService(Service):
         # Todo:workaround by encode wav file to adpcm, need to implement the real capture and encode
         wave_file = None
         if mic_open_params == 1:
-            wave_file = './audio/decoded_out_launch_nf_8k.wav'
+            wave_file = './audio/find_spiderman_8k.wav'
         elif mic_open_params == 2:
-            wave_file = './audio/decoded_out_launch_nf_16k.wav'
+            wave_file = './audio/find_spiderman_16k.wav'
         else:
             return
 
