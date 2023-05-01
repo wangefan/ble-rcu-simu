@@ -14,7 +14,7 @@ from enum import Enum
 from PyQt5 import QtCore, QtWidgets
 from key_event_name import KEY_EVENT_NAME_VOICE
 from tivo_rcu import TivoRcuDlg
-
+import argparse
 
 class MainState(Enum):
     ADVERTISING = 0
@@ -251,6 +251,22 @@ def closeAll():
         g_core_application.quit()
 
 def main():
+    parser = argparse.ArgumentParser(description='RCU tool parameters')
+    parser.add_argument('-io', dest='io_capability_type', nargs='?', type=int,
+                        help='Specify the IO capability of the device, 0: NoInputNoOutput, 1: DisplayYesNo, 2: KeyboardDisplay, 3: DisplayOnly, 4:  KeyboardOnly')
+    args = parser.parse_args()
+
+    io_capability_type = args.io_capability_type
+    io_capability = "NoInputNoOutput"
+    if io_capability_type == 1:
+        io_capability = "DisplayYesNo"
+    elif io_capability_type == 2:
+        io_capability = "KeyboardDisplay"
+    elif io_capability_type == 3:
+        io_capability = "DisplayOnly"
+    elif io_capability_type == 4:
+        io_capability = "KeyboardOnly"
+
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
     bus = dbus.SystemBus()
 
@@ -285,12 +301,12 @@ def main():
     mac_address = adapter_props.Get(
         bluetooth_constants.ADAPTER_INTERFACE, bluetooth_constants.ADAPTER_PROP_MAC_ADDRESS)
 
-    print("2. Agent procedure")
+    print(f"2. Agent procedure, register with io: {io_capability}")
     AGENT_PATH = bluetooth_constants.BLUEZ_OBJ_ROOT + "agent"
     agent = Agent(bus, AGENT_PATH)
     agent_manager = dbus.Interface(bus.get_object(bluetooth_constants.BLUEZ_SERVICE_NAME, '/org/bluez'),
                                    bluetooth_constants.AGENT_MANAGER_INTERFACE)
-    agent_manager.RegisterAgent(AGENT_PATH, "NoInputNoOutput")
+    agent_manager.RegisterAgent(AGENT_PATH, io_capability)
     agent_manager.RequestDefaultAgent(AGENT_PATH)
 
     print("3. Advertise procedure")
