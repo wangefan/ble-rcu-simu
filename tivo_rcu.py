@@ -1,6 +1,8 @@
 from PyQt5 import QtWidgets
+from PyQt5.QtWidgets import QFileDialog
 from tivo_rcu_ui import Ui_TivoRcuDlg
 from key_event_name import *
+import os
 
 import time
 import threading
@@ -8,11 +10,22 @@ import threading
 class TivoRcuDlg(QtWidgets.QDialog):
     def __init__(self, key_event_listener, capture_keyboard_listener):
         super(TivoRcuDlg, self).__init__()
+        self.key_event_listener = key_event_listener
+        self.capture_keyboard_listener = capture_keyboard_listener
+        current_dir = os.getcwd()
+        self.path_to_8k_file = os.path.join(
+            current_dir, "./audio/find_spiderman_8k.wav")
+        self.path_to_16k_file = os.path.join(
+            current_dir, "./audio/find_spiderman_16k.wav")
         self.ui = Ui_TivoRcuDlg()
         self.ui.setupUi(self)
         self.setup_control()
-        self.key_event_listener = key_event_listener
-        self.capture_keyboard_listener = capture_keyboard_listener
+
+    def get_8k_file_path(self):
+        return self.path_to_8k_file
+    
+    def get_16k_file_path(self):
+        return self.path_to_16k_file
 
     def setup_control(self):
         self.ui.mPower.clicked.connect(self.powerClicked)
@@ -44,6 +57,10 @@ class TivoRcuDlg(QtWidgets.QDialog):
         self.ui.mNum7.clicked.connect(self.num7Clicked)
         self.ui.mNum8.clicked.connect(self.num8Clicked)
         self.ui.mNum9.clicked.connect(self.num9Clicked)
+        self.ui.mBtnOpen8k.clicked.connect(self.open8kClicked)
+        self.ui.mBtnOpen16k.clicked.connect(self.open16kClicked)
+        self.ui.mLbPathTo8k.setText(os.path.basename(self.path_to_8k_file))
+        self.ui.mLbPathTo16k.setText(os.path.basename(self.path_to_16k_file))
 
     def setupThread(self, key_event_name):
         if self.key_event_listener != None:
@@ -164,3 +181,17 @@ class TivoRcuDlg(QtWidgets.QDialog):
     def num9Clicked(self):
         if self.key_event_listener != None:
             self.key_event_listener(KEY_EVENT_NAME_9)
+
+    def open8kClicked(self):
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, "Open 8k File", self.path_to_8k_file, "WAV Files (*.wav)")
+        if file_path != "":
+            self.path_to_8k_file = file_path
+            self.ui.mLbPathTo8k.setText(os.path.basename(self.path_to_8k_file))
+
+    def open16kClicked(self):
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, "Open 16k File", self.path_to_16k_file, "WAV Files (*.wav)")
+        if file_path != "":
+            self.path_to_16k_file = file_path
+            self.ui.mLbPathTo16k.setText(os.path.basename(self.path_to_16k_file))

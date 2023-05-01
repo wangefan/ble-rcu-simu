@@ -104,6 +104,8 @@ class VoiceService(Service):
     def __init__(self, bus):
         Service.__init__(self, bus, self.PATH_BASE, self.SERVICE_UUID, True)
 
+        self.tivo_rcu_dlg = None
+
         self.tivo_tv_tx_char = TivoTvTxCharacteristic(bus, 0, self)
         self.add_characteristic(self.tivo_tv_tx_char)
 
@@ -112,6 +114,9 @@ class VoiceService(Service):
 
         self.tivo_tv_ctl_char = TivoTvCtlCharacteristic(bus, 2, self)
         self.add_characteristic(self.tivo_tv_ctl_char)
+
+    def set_tivo_rcu_dlg(self, tivo_rcu_dlg):
+        self.tivo_rcu_dlg = tivo_rcu_dlg
 
     # split the adpcm data into chunks with each one 20 bytes,
     def NotifyADPCMPktWithHeaderWithChunks(self, adpcm_packet_with_header):
@@ -146,9 +151,9 @@ class VoiceService(Service):
         # Todo:workaround by encode wav file to adpcm, need to implement the real capture and encode
         wave_file = None
         if mic_open_params == 1:
-            wave_file = './audio/find_spiderman_8k.wav'
+            wave_file = self.tivo_rcu_dlg.get_8k_file_path()
         elif mic_open_params == 2:
-            wave_file = './audio/find_spiderman_16k.wav'
+            wave_file = self.tivo_rcu_dlg.get_16k_file_path()
         else:
             return
 

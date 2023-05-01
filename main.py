@@ -63,6 +63,7 @@ class TivoRCUService(dbus.service.Object):
         self.add_service(BatteryService(bus))
 
         self.tivo_ruc_dlg = TivoRcuDlg(self.onKeyEvent, self.onCaptureKeyboard)
+        self.voice_service.set_tivo_rcu_dlg(self.tivo_ruc_dlg)
 
         self.online = False
         self.KeyEventMonitor = KeyEventMonitor(self.onKeyEvent, self.onExit)
