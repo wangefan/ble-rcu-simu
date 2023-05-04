@@ -4,8 +4,8 @@ from tivo_rcu_ui import Ui_TivoRcuDlg
 from key_event_name import *
 import os
 
+from threading import Timer
 import time
-import threading
 
 class TivoRcuDlg(QtWidgets.QDialog):
     def __init__(self, key_event_listener, capture_keyboard_listener):
@@ -62,60 +62,62 @@ class TivoRcuDlg(QtWidgets.QDialog):
         self.ui.mLbPathTo8k.setText(os.path.basename(self.path_to_8k_file))
         self.ui.mLbPathTo16k.setText(os.path.basename(self.path_to_16k_file))
 
-    def setupThread(self, key_event_name):
-        if self.key_event_listener != None:
-            self.thread = threading.Thread(target=self.sendKey, args=(key_event_name,))
-            self.thread.start()
-
-    def sendKey(self, key_event_name):
-        self.pressed = True
-        while self.pressed:
+    def detectEvent(self, key_event_name, key_event_name_release=None):
+        if key_event_name_release is None:
+            if self.timer_started:
+                self.key_event_listener(key_event_name)
+        else:
+            self.timer_started = False
             self.key_event_listener(key_event_name)
             self.key_event_listener(KEY_EVENT_NAME_RELEASE)
-            if key_event_name == KEY_EVENT_NAME_VOLUP or key_event_name == KEY_EVENT_NAME_VOLDW:
-                time.sleep(0.15)
-            else:
-                time.sleep(0.5)
-
-    def destroyThread(self):
-        self.pressed = False
-        self.thread.join()
 
     def dpadLeftPressed(self):
-        self.setupThread(KEY_EVENT_NAME_LEFT)
+        self.timer_started = True
+        t = Timer(0.5, self.detectEvent, args=(KEY_EVENT_NAME_LEFT,))
+        t.start()
 
     def dpadLeftReleased(self):
-        self.destroyThread()
+        self.detectEvent(KEY_EVENT_NAME_LEFT, KEY_EVENT_NAME_RELEASE,)
 
     def dpadRightPressed(self):
-        self.setupThread(KEY_EVENT_NAME_RIGHT)
+        self.timer_started = True
+        t = Timer(0.5, self.detectEvent, args=(KEY_EVENT_NAME_RIGHT,))
+        t.start()
 
     def dpadRightReleased(self):
-        self.destroyThread()
+        self.detectEvent(KEY_EVENT_NAME_RIGHT, KEY_EVENT_NAME_RELEASE,)
 
     def dpadUpPressed(self):
-        self.setupThread(KEY_EVENT_NAME_UP)
+        self.timer_started = True
+        t = Timer(0.5, self.detectEvent, args=(KEY_EVENT_NAME_UP,))
+        t.start()
 
     def dpadUpReleased(self):
-        self.destroyThread()
+        self.detectEvent(KEY_EVENT_NAME_UP, KEY_EVENT_NAME_RELEASE,)
 
     def dpadDownPressed(self):
-        self.setupThread(KEY_EVENT_NAME_DOWN)
+        self.timer_started = True
+        t = Timer(0.5, self.detectEvent, args=(KEY_EVENT_NAME_DOWN,))
+        t.start()
 
     def dpadDownReleased(self):
-        self.destroyThread()
+        self.detectEvent(KEY_EVENT_NAME_DOWN, KEY_EVENT_NAME_RELEASE,)
 
     def dpadVolUpPressed(self):
-        self.setupThread(KEY_EVENT_NAME_VOLUP)
+        self.timer_started = True
+        t = Timer(0.15, self.detectEvent, args=(KEY_EVENT_NAME_VOLUP,))
+        t.start()
 
     def dpadVolUpReleased(self):
-        self.destroyThread()
+        self.detectEvent(KEY_EVENT_NAME_VOLUP, KEY_EVENT_NAME_RELEASE,)
 
     def dpadVolDownPressed(self):
-        self.setupThread(KEY_EVENT_NAME_VOLDW)
+        self.timer_started = True
+        t = Timer(0.15, self.detectEvent, args=(KEY_EVENT_NAME_VOLDW,))
+        t.start()
 
     def dpadVolDownReleased(self):
-        self.destroyThread()
+        self.detectEvent(KEY_EVENT_NAME_VOLDW, KEY_EVENT_NAME_RELEASE,)
 
     def powerClicked(self):
         if self.key_event_listener != None:
