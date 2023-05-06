@@ -56,14 +56,14 @@ class TivoRCUService(dbus.service.Object):
         self.all_services_registered = False
         self.all_services_registered_cb = None
         self.hid_service = HIDService(bus, self.service_registered_cb)
-        self.voice_service = VoiceService(bus)
         self.add_service(self.hid_service)
+        
+        #Prepare voice service
+        self.tivo_ruc_dlg = TivoRcuDlg(self.onKeyEvent, self.onCaptureKeyboard)        
+        self.voice_service = VoiceService(bus, self.tivo_ruc_dlg)
         self.add_service(self.voice_service)
         self.add_service(DeviceInfoService(bus))
         self.add_service(BatteryService(bus))
-
-        self.tivo_ruc_dlg = TivoRcuDlg(self.onKeyEvent, self.onCaptureKeyboard)
-        self.voice_service.set_tivo_rcu_dlg(self.tivo_ruc_dlg)
 
         self.online = False
         self.KeyEventMonitor = KeyEventMonitor(self.onKeyEvent, self.onExit)

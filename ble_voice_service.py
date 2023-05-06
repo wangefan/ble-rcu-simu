@@ -1,13 +1,11 @@
 #!/usr/bin/python3
 import audioop
-import os
-import threading
-import wave
 import bluetooth_constants
 from ble_base import Characteristic, Service
 import dbus.service
 from gi.repository import GLib
 import struct
+from voice_source import DataState, VoiceSource
 
 TV_TX_GET_CAPS = 0x0A
 TV_TX_MIC_OPEN = 0x0C
@@ -65,7 +63,7 @@ class TivoTvRxCharacteristic(Characteristic):
         print('TivoTvRxCharacteristic.StopNotify')
 
     def Notify(self, obj):
-        #print(f'TivoTvRxCharacteristic.Notify, obj = {obj}')
+        # print(f'TivoTvRxCharacteristic.Notify, obj = {obj}')
         self.PropertiesChanged(
             bluetooth_constants.GATT_CHARACTERISTIC_INTERFACE, obj, [])
 
@@ -101,10 +99,10 @@ class VoiceService(Service):
     SERVICE_UUID = 'ab5e0001-5a21-4f05-bc7d-af01f617b664'
     PATH_BASE = bluetooth_constants.BLUEZ_OBJ_ROOT + "tivo_voice_service"
 
-    def __init__(self, bus):
+    def __init__(self, bus, tivo_ruc_dlg):
         Service.__init__(self, bus, self.PATH_BASE, self.SERVICE_UUID, True)
 
-        self.tivo_rcu_dlg = None
+        self.voice_source = VoiceSource(tivo_ruc_dlg, self.onPCMData)
 
         self.tivo_tv_tx_char = TivoTvTxCharacteristic(bus, 0, self)
         self.add_characteristic(self.tivo_tv_tx_char)
@@ -115,8 +113,12 @@ class VoiceService(Service):
         self.tivo_tv_ctl_char = TivoTvCtlCharacteristic(bus, 2, self)
         self.add_characteristic(self.tivo_tv_ctl_char)
 
-    def set_tivo_rcu_dlg(self, tivo_rcu_dlg):
-        self.tivo_rcu_dlg = tivo_rcu_dlg
+        # stuff to encode to ADPCM
+        self.resetEncodeADPCMState()
+
+    def resetEncodeADPCMState(self):
+        self.state = (0, 0x00)
+        self.seq = 0
 
     # split the adpcm data into chunks with each one 20 bytes,
     def NotifyADPCMPktWithHeaderWithChunks(self, adpcm_packet_with_header):
@@ -129,7 +131,7 @@ class VoiceService(Service):
         while idx_chunk < chunk_num:
             chunk = adpcm_packet_with_header[idx_chunk *
                                              adpcm_chunk_size:(idx_chunk+1)*adpcm_chunk_size]
-            #self.tivo_tv_rx_char.Notify({'Value': chunk})
+            # self.tivo_tv_rx_char.Notify({'Value': chunk})
             self.tivo_tv_rx_char.Notify({'Value': chunk})
             idx_chunk += 1
 
@@ -141,64 +143,44 @@ class VoiceService(Service):
     def NotifyADPCMPktWithHeader(self, adpcm_packet_with_header):
         self.tivo_tv_rx_char.Notify({'Value': adpcm_packet_with_header})
 
-
-    # mic_open_params = 1: ADPCM (8Khz/16bit)
-    # mic_open_params = 2: ADPCM (16Khz/16bit)
-    def CaptureAndSendAudio(self, mic_open_params):
+    # receive PCM data from the voice source, encode it to adpcm data and send it to the client.
+    # will ended incase receive 0 bytes from the voice source.
+    def onPCMData(self, data_state, read_pcm_frames):
         print(
-            f'CaptureAndSendAudio called, mic_open_params = {mic_open_params}')
-
-        # Todo:workaround by encode wav file to adpcm, need to implement the real capture and encode
-        wave_file = None
-        if mic_open_params == 1:
-            wave_file = self.tivo_rcu_dlg.get_8k_file_path()
-        elif mic_open_params == 2:
-            wave_file = self.tivo_rcu_dlg.get_16k_file_path()
-        else:
-            return
-
-        if os.path.exists(wave_file) == False:
-            return
-
-        adpcm_data = None
-        with wave.open(wave_file, 'rb') as f:
-            n_channels = f.getnchannels()
-            sample_width = f.getsampwidth()
-            sample_rate = f.getframerate()
+            f'VoiceService.onPCMData called, data_state = {data_state}')
+        if data_state == DataState.BEGIN:
+            # todo: send begin notification
             print(
-                f'CaptureAndSendAudio, open file = {wave_file}, n_channels = {n_channels}, sample_width = {sample_width}, sample_rate = {sample_rate}')
-            adpcm_chunk_size = 128
-            adpcm_encode_fac = 4
-            pcm_frame_size = sample_width * n_channels
-            pcm_frames_num = adpcm_chunk_size * adpcm_encode_fac // pcm_frame_size
-            state = (0, 0x00)
-            seq = 0
-            while True:
-                read_pcm_frames = f.readframes(pcm_frames_num)
-                read_pcm_frames_num = len(read_pcm_frames)
-                if read_pcm_frames_num == 0 or read_pcm_frames_num < pcm_frames_num:
-                    break
-                # adpcm_data_with_header will append 6 bytes header and 128 bytes adpcm data.
-                # header structure: [seq hi, seq lo, rcuid, pre predict hi, pre predict lo, pre index]
-                adpcm_data_with_header_bytes = struct.pack(
-                    '>H', seq) + struct.pack('B', 0x00) + struct.pack('>h', state[0]) + struct.pack('B', state[1])
-                adpcm_data_with_header = [
-                    dbus.Byte(b) for b in adpcm_data_with_header_bytes]
-                seq += 1
-                
-                # encode the pcm data to adpcm data
-                adpcm_data, state = audioop.lin2adpcm(
-                    read_pcm_frames, sample_width, state)
-                adpcm_data_with_header.extend(
-                    [dbus.Byte(b) for b in adpcm_data])
-                adpcm_data_with_header_len = len(adpcm_data_with_header)
-                print(f'CaptureAndSendAudio, send seq: {seq}')
-                self.NotifyADPCMPktWithHeader(adpcm_data_with_header)
-
+                f'VoiceService.onPCMData begin to send pcmdata, data_state = {data_state}')
+            self.resetEncodeADPCMState()
+        elif data_state == DataState.END:
+            print(
+                f'VoiceService.onPCMData end, will send end to client')
             # send the end notification
             audio_end_byte = struct.pack('>B', RCU_CTL_AUDIO_END)
             dbus_audio_end_byte = [dbus.Byte(audio_end_byte)]
             self.tivo_tv_ctl_char.Notify({'Value': dbus_audio_end_byte})
+        elif data_state == DataState.SENDING_DATA:
+            if len(read_pcm_frames) > 0:
+                # adpcm_data_with_header will append 6 bytes header and 128 bytes adpcm data.
+                # header structure: [seq hi, seq lo, rcuid, pre predict hi, pre predict lo, pre index]
+                adpcm_header_bytes = struct.pack(
+                    '>H', self.seq) + struct.pack('B', 0x00) + struct.pack('>h', self.state[0]) + struct.pack('B', self.state[1])
+                adpcm_data_with_header = [
+                    dbus.Byte(b) for b in adpcm_header_bytes]
+                self.seq += 1
+
+                # encode the pcm data to adpcm data
+                adpcm_data, self.state = audioop.lin2adpcm(
+                    read_pcm_frames, self.voice_source.getSampleWidth(), self.state)
+                print(
+                    f'VoiceService.onPCMData, read pcm ok, encoded to ADPCM, len = {len(adpcm_data)}')
+                adpcm_data_with_header.extend(
+                    [dbus.Byte(b) for b in adpcm_data])
+                self.NotifyADPCMPktWithHeader(adpcm_data_with_header)
+            else:
+                print(
+                    f'VoiceService.onPCMData receiving data error, len(read_pcm_frames) <= 0!')
 
     def HandleTvTx(self, value, options):
         print(f'HandleTvTx called, value = {value}')
@@ -229,17 +211,19 @@ class VoiceService(Service):
             # mic_open_params = 1: ADPCM (8Khz/16bit)
             # mic_open_params = 2: ADPCM (16Khz/16bit)
             mic_open_params = (int)(value[2])
-            print(f'HandleTvTx, mic_open_params = {mic_open_params}')
+            if mic_open_params == 1:
+                print(f'HandleTvTx, mic_open_params:ADPCM (8Khz/16bit)')
+            elif mic_open_params == 2:
+                print(f'HandleTvTx, mic_open_params:ADPCM (16Khz/16bit)')
 
             # Todo:error case is not implemented yet
             mic_open_resp = struct.pack('>B', RCU_CTL_AUDIO_START)
             dbus_mic_open_resp = [dbus.Byte(mic_open_resp)]
             self.tivo_tv_ctl_char.Notify({'Value': dbus_mic_open_resp})
-            # start a thread to capture and send audio after 10ms, pass
-            # mic_open_params to the thread.
-            threading.Timer(0.01, self.CaptureAndSendAudio,
-                            [mic_open_params]).start()
 
+            # start to capture voice with worker thread, will receive pcm data from
+            # the callback onPCMData
+            self.voice_source.startCaptureVoice(mic_open_params)
             print(f'HandleTvTx, handle mic open end')
 
         elif int(command_val) == TV_TX_MIC_CLOSE:

@@ -61,6 +61,9 @@ class TivoRcuDlg(QtWidgets.QDialog):
         self.ui.mBtnOpen16k.clicked.connect(self.open16kClicked)
         self.ui.mLbPathTo8k.setText(os.path.basename(self.path_to_8k_file))
         self.ui.mLbPathTo16k.setText(os.path.basename(self.path_to_16k_file))
+        self.ui.mRdCaptureFile.clicked.connect(self.captureFileClicked)
+        self.ui.mRdCaptureVoice.clicked.connect(self.captureVoiceClicked)
+        self.setCaptureByFile(True)
 
     def detectEvent(self, key_event_name, key_event_name_release=None):
         if key_event_name_release is None:
@@ -196,4 +199,32 @@ class TivoRcuDlg(QtWidgets.QDialog):
             self, "Open 16k File", self.path_to_16k_file, "WAV Files (*.wav)")
         if file_path != "":
             self.path_to_16k_file = file_path
-            self.ui.mLbPathTo16k.setText(os.path.basename(self.path_to_16k_file))
+            self.ui.mLbPathTo16k.setText(
+                os.path.basename(self.path_to_16k_file))
+
+    def captureFileClicked(self):
+        self.setCaptureByFile(True)
+
+    def captureVoiceClicked(self):
+        self.setCaptureByFile(False)
+
+    def setCaptureByFile(self, capture_by_file):
+        self.ui.mRdCaptureFile.setChecked(capture_by_file)
+        self.ui.mRdCaptureVoice.setChecked(not capture_by_file)
+        if capture_by_file:
+            self.ui.groupBox.setEnabled(True)
+            self.ui.groupBox_2.setEnabled(True)
+            self.ui.mBtnOpen16k.setEnabled(True)
+            self.ui.mBtnOpen8k.setEnabled(True)
+            self.ui.mLbPathTo8k.setEnabled(True)
+            self.ui.mLbPathTo16k.setEnabled(True)
+        else:
+            self.ui.groupBox.setEnabled(False)
+            self.ui.groupBox_2.setEnabled(False)
+            self.ui.mBtnOpen16k.setEnabled(False)
+            self.ui.mBtnOpen8k.setEnabled(False)
+            self.ui.mLbPathTo8k.setEnabled(False)
+            self.ui.mLbPathTo16k.setEnabled(False)
+
+    def getCaptureByFile(self):
+        return self.ui.mRdCaptureFile.isChecked()
