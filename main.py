@@ -15,18 +15,18 @@ from PyQt5 import QtCore, QtWidgets
 from key_event_name import KEY_EVENT_NAME_VOICE
 from tivo_rcu import TivoRcuDlg
 import argparse
-
-class MainState(Enum):
-    ADVERTISING = 0
-    CONNECTING = 1
-    CONNECTED = 2
+import bluetooth_utils
 
 
 g_core_application = None
-g_main_state = MainState.ADVERTISING
 g_ad_manager = None
+g_gatt_service_manager = None
 g_rcu_advertisement = None
 g_tivo_rcu_service = None
+g_tivo_tv_dict = {}   # {obj path: {"Trusted": True/False, "Paired": True/False, "Connected": True/False, "ServiceResolved": True/False},
+                      #  obj path2: {"Trusted": True/False, "Paired": True/False, "Connected": True/False, "ServiceResolved": True/False}, ...}
+                      # ex: {"/org/bluez/hci0/dev_00_11_22_33_44_55": {"Trusted": False, "Paired": False, "Connected": False, "ServiceResolved": False},
+                      #      "/org/bluez/hci0/dev_00_11_22_33_44_56": {"Trusted": True, "Paired": True, "Connected": True, "ServiceResolved": True}}
 
 
 def register_ad_cb():
@@ -39,11 +39,6 @@ def register_ad_error_cb(error):
         print(f"Failed to register RCUAdvertisement: {str(error)}, exit!")
         closeAll()
 
-
-def application_all_services_registered_cb(path):
-    print(f"application_all_services_registered_cb called, path = {path}")
-    update_state(path)
-
 class TivoRCUService(dbus.service.Object):
     """
     org.bluez.GattApplication1 interface implementation
@@ -53,9 +48,7 @@ class TivoRCUService(dbus.service.Object):
         self.path = '/'
         self.services = []
         dbus.service.Object.__init__(self, bus, self.path)
-        self.all_services_registered = False
-        self.all_services_registered_cb = None
-        self.hid_service = HIDService(bus, self.service_registered_cb)
+        self.hid_service = HIDService(bus)
         self.add_service(self.hid_service)
         
         #Prepare voice service
@@ -65,18 +58,12 @@ class TivoRCUService(dbus.service.Object):
         self.add_service(DeviceInfoService(bus))
         self.add_service(BatteryService(bus))
 
-        self.online = False
+        self.connected_device_path = None
         self.KeyEventMonitor = KeyEventMonitor(self.onKeyEvent, self.onExit)
         self.KeyEventMonitor.start()
 
     def get_path(self):
         return dbus.ObjectPath(self.path)
-
-    def service_registered_cb(self, obj_path):
-        print(f"TivoRCUService.service_registered_cb get {obj_path}")
-        self.all_services_registered = True
-        if self.all_services_registered_cb != None:
-            self.all_services_registered_cb(obj_path)
 
     def add_service(self, service):
         self.services.append(service)
@@ -101,28 +88,29 @@ class TivoRCUService(dbus.service.Object):
 
         return response
 
-    def set_online(self, online):
-        self.online = online
-        if self.online == True:
+    def set_connected_device(self, device_path):
+        self.connected_device_path = device_path
+        if self.connected_device_path != None:
             self.tivo_ruc_dlg.show()
         else:
             self.tivo_ruc_dlg.hide()
 
-    def get_all_services_registered(self):
-        return self.all_services_registered
-    
-    def set_all_services_unregistered(self):
-        self.all_services_registered = False
-    
-    def set_all_services_registered_cb(self, cb):
-        print(f"TivoRCUService.set_all_services_registered_cb called")
-        self.all_services_registered_cb = cb
+    def get_connected_device(self):
+        return self.connected_device_path
 
     def onExit(self):
+        print(f"onExit begin")
+        connected_device = self.get_connected_device()
+        # if there is connection exist, disconnect it
+        if connected_device != None:
+            device_interface = bluetooth_utils.get_object_interface(
+                connected_device, bluetooth_constants.DEVICE_INTERFACE)
+            device_interface.Disconnect()
+            print(f"onExit, disconnect {connected_device} end")
         closeAll()
 
     def onKeyEvent(self, key_event_name):
-        if self.online:
+        if self.connected_device_path:
             self.hid_service.onKeyEvent(key_event_name)
             if KEY_EVENT_NAME_VOICE == key_event_name:
                 self.voice_service.VoiceSearch()
@@ -142,70 +130,142 @@ def register_app_error_cb(error):
     closeAll()
 
 
-# If the object path by central has the property "Connected" with True, 
-# It experiences central is connected with peripheral but not workable 
-# since the profiles have no registered yet, hence it would be the state 
-# MainState.CONNECTING.
 def update_state(path):
-    connected_state = False
-    bus = dbus.SystemBus()
-    try:
-        properties_in_path = dbus.Interface(bus.get_object(
-            bluetooth_constants.BLUEZ_SERVICE_NAME, path), bluetooth_constants.DBUS_PROPERTIES)
-        connected_state = properties_in_path.Get(
-            bluetooth_constants.DEVICE_INTERFACE, bluetooth_constants.DEVICE_PROP_CONNECTED)
-    except Exception as e:
-        print(f"update_state, exception occurs with :{e}")    
-        
-    print(f"update_state, path = {path}, connected_state = {connected_state}")
+    global g_tivo_tv_dict
+    tv_status = g_tivo_tv_dict.get(path, None)
+    if tv_status is None:
+        tv_status = {bluetooth_constants.DEVICE_PROP_TRUSTED: None,
+                     bluetooth_constants.DEVICE_PROP_PAIRED: None,
+                     bluetooth_constants.DEVICE_PROP_CONNECTED: None,
+                     bluetooth_constants.DEVICE_PROP_SERVICES_RESOLVED: None}
+        g_tivo_tv_dict[path] = tv_status
+
+    trusted = bluetooth_utils.get_device_property(
+        path, bluetooth_constants.DEVICE_PROP_TRUSTED)
+    paired = bluetooth_utils.get_device_property(
+        path, bluetooth_constants.DEVICE_PROP_PAIRED)
+    connected = bluetooth_utils.get_device_property(
+        path, bluetooth_constants.DEVICE_PROP_CONNECTED)
+    service_resolved = bluetooth_utils.get_device_property(
+        path, bluetooth_constants.DEVICE_PROP_SERVICES_RESOLVED)
+
+    tv_status[bluetooth_constants.DEVICE_PROP_TRUSTED] = trusted
+    tv_status[bluetooth_constants.DEVICE_PROP_PAIRED] = paired
+    tv_status[bluetooth_constants.DEVICE_PROP_CONNECTED] = connected
+    tv_status[bluetooth_constants.DEVICE_PROP_SERVICES_RESOLVED] = service_resolved
+
+    print(
+        f"update_state ok, path = {path}, tv_status: \r\nTrusted=>{tv_status[bluetooth_constants.DEVICE_PROP_TRUSTED]}\r\nPaired=>{tv_status[bluetooth_constants.DEVICE_PROP_PAIRED]}\r\nConnected=>{tv_status[bluetooth_constants.DEVICE_PROP_CONNECTED]}\r\nServiceResolved=>{tv_status[bluetooth_constants.DEVICE_PROP_SERVICES_RESOLVED]}")
 
     global g_tivo_rcu_service
-    if connected_state == True:
-        if g_tivo_rcu_service.get_all_services_registered():
-            g_main_state = MainState.CONNECTED
-        else:
-            g_main_state = MainState.CONNECTING
-    else:
-        g_main_state = MainState.ADVERTISING
-
-    if g_main_state == MainState.ADVERTISING:
-        g_tivo_rcu_service.set_online(False)
-        print("TivoRCUService is not ready, into advertising state")
-        start_advertising()
-    elif g_main_state == MainState.CONNECTING:
-        g_tivo_rcu_service.set_online(False)
+    if trusted and paired and connected and service_resolved:
         stop_advertising()
-        print("Now is connecting ...")
-    elif g_main_state == MainState.CONNECTED:
-        stop_advertising()
-        g_tivo_rcu_service.set_online(True)
+        g_tivo_rcu_service.set_connected_device(path)
         print(
-            "TivoRCUService is ready, press any key to send the events.. (press esc to exit")
+            f"{path} connected! TivoRCUService is ready, press any key to send the events.. (press esc to exit")
+    else:
+        connected_device_path = g_tivo_rcu_service.get_connected_device()
+        if connected_device_path == path:
+            print(
+                f"{path} disconnected, TivoRCUService is not ready, into advertising state")
+            start_advertising()
+            g_tivo_rcu_service.set_connected_device(None)
         
 
 """
 When a connection for a device which is already known is established, a PropertiesChanged signal is
-instead emitted with the Connected property
+instead emitted with the Connected property.
+ex:
+signal time=1636546346.734315 sender=:1.13 -> destination=(null destination) serial=287
+path=/org/bluez/hci0/dev_57_B0_FD_AF_2B_C3; interface=org.freedesktop.DBus.Properties;
+member=PropertiesChanged
+    string "org.bluez.Device1"
+    array [
+        dict entry(
+            string "ServicesResolved"
+            variant boolean false
+        )
+        dict entry(
+            string "Connected"
+            variant boolean false
+        )
+        dict entry(
+            string "UUIDs"
+            variant array []
+        )
+    ]
+    array [
+    ]
 """
+
+
 def properties_changed(interface, changed, invalidated, path):
-    if (interface == bluetooth_constants.DEVICE_INTERFACE):
-        if ("Connected" in changed):
-            print(f"properties_changed called with Connected property, path = {path}")
-            if changed["Connected"] == 0: # mean from connected to disconnected, we need to reset services to unregistered
-                print("call g_tivo_rcu_service.set_all_services_unregistered()")
-                g_tivo_rcu_service.set_all_services_unregistered()
-            update_state(path)
+    if interface == bluetooth_constants.DEVICE_INTERFACE:
+        print(
+            f"[[Properties changed, path = {path}")
+        if bluetooth_constants.DEVICE_PROP_TRUSTED in changed:
+            print(
+                f"[[Properties changed, Trusted:{changed[bluetooth_constants.DEVICE_PROP_TRUSTED]}")
+        if bluetooth_constants.DEVICE_PROP_PAIRED in changed:
+            print(
+                f"[[Properties changed, Paired:{changed[bluetooth_constants.DEVICE_PROP_PAIRED]}")
+        if bluetooth_constants.DEVICE_PROP_CONNECTED in changed:
+            print(
+                f"[[Properties changed, Connected:{changed[bluetooth_constants.DEVICE_PROP_CONNECTED]}")
+        if bluetooth_constants.DEVICE_PROP_SERVICES_RESOLVED in changed:
+            print(
+                f"[[Properties changed, ServiceResolved:{changed[bluetooth_constants.DEVICE_PROP_SERVICES_RESOLVED]}")
+
+        update_state(path)
 
 """
 When a connection for a previously unknown device is established, an InterfacesAdded signal is
-emitted by a device object with Connected status.
+emitted by a device object with properties status.
+ex:
+signal time=1636540910.588206 sender=:1.13 -> destination=(null destination) serial=53
+path=/; interface=org.freedesktop.DBus.ObjectManager; mem
+ber=InterfacesAdded
+object path "/org/bluez/hci0/dev_7F_3C_14_39_EB_90"
+array [
+    dict entry(
+        string "org.freedesktop.DBus.Introspectable"
+        array [
+        ]
+    )
+    dict entry(
+        string "org.bluez.Device1"
+        array [
+            ..
+            dict entry(
+                string "Connected"
+                variant boolean true
+            )
+            ..
+        ]
+    )
+    ..
+]
 """
+
+
 def interfaces_added(path, interfaces):
     if bluetooth_constants.DEVICE_INTERFACE in interfaces:
+        print(
+            f"Receive device interfaces added signal, path = {path}")
         properties = interfaces[bluetooth_constants.DEVICE_INTERFACE]
-        if ("Connected" in properties):
-            print(f"interfaces_added called with Connected property, path = {path}")
-            update_state(path)
+        if (bluetooth_constants.DEVICE_PROP_TRUSTED in properties):
+            print(
+                f"Receive device interfaces added signal, Trusted:{properties[bluetooth_constants.DEVICE_PROP_TRUSTED]}")
+        if (bluetooth_constants.DEVICE_PROP_PAIRED in properties):
+            print(
+                f"Receive device interfaces added signal, Paired:{properties[bluetooth_constants.DEVICE_PROP_PAIRED]}")
+        if (bluetooth_constants.DEVICE_PROP_CONNECTED in properties):
+            print(
+                f"Receive device interfaces added signal, Connected:{properties[bluetooth_constants.DEVICE_PROP_CONNECTED]}")
+        if (bluetooth_constants.DEVICE_PROP_SERVICES_RESOLVED in properties):
+            print(
+                f"Receive device interfaces added signal, ServiceResolved:{properties[bluetooth_constants.DEVICE_PROP_SERVICES_RESOLVED]}")
+        update_state(path)
 
 """
 Returns the first object that the bluez service has that has a GattManager1 interface,
@@ -247,6 +307,10 @@ def stop_advertising():
 
 def closeAll():
     stop_advertising()
+    global g_tivo_rcu_service
+    global g_gatt_service_manager
+    if g_gatt_service_manager != None:
+        g_gatt_service_manager.UnregisterApplication(g_tivo_rcu_service.get_path())
     global g_core_application
     if g_core_application != None:
         g_core_application.quit()
@@ -319,7 +383,8 @@ def main():
     start_advertising()
 
     print('4. Registering GATT procedure')
-    gatt_service_manager = dbus.Interface(
+    global g_gatt_service_manager
+    g_gatt_service_manager = dbus.Interface(
         bus.get_object(bluetooth_constants.BLUEZ_SERVICE_NAME, adapter_obj),
         bluetooth_constants.GATT_MANAGER_INTERFACE)
 
@@ -328,8 +393,7 @@ def main():
 
     global g_tivo_rcu_service
     g_tivo_rcu_service = TivoRCUService(bus)
-    g_tivo_rcu_service.set_all_services_registered_cb(application_all_services_registered_cb)
-    gatt_service_manager.RegisterApplication(g_tivo_rcu_service.get_path(), {},
+    g_gatt_service_manager.RegisterApplication(g_tivo_rcu_service.get_path(), {},
                                              reply_handler=register_app_cb,
                                              error_handler=register_app_error_cb)
 
