@@ -307,10 +307,6 @@ def stop_advertising():
 
 def closeAll():
     stop_advertising()
-    global g_tivo_rcu_service
-    global g_gatt_service_manager
-    if g_gatt_service_manager != None:
-        g_gatt_service_manager.UnregisterApplication(g_tivo_rcu_service.get_path())
     global g_core_application
     if g_core_application != None:
         g_core_application.quit()
@@ -398,6 +394,12 @@ def main():
                                              error_handler=register_app_error_cb)
 
     g_core_application.exec_()
+    if g_gatt_service_manager != None:
+        g_gatt_service_manager.UnregisterApplication(g_tivo_rcu_service.get_path())
+        print('4-1. g_gatt_service_manager.UnregisterApplication(g_tivo_rcu_service.get_path()) ok')
+    print('4-2. Apapter power off')
+    adapter_props.Set(bluetooth_constants.ADAPTER_INTERFACE,
+                      bluetooth_constants.ADAPTER_PROP_POWER, dbus.Boolean(0))
     print('5. Process end')
 
 
