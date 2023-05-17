@@ -23,21 +23,26 @@ g_ad_manager = None
 g_gatt_service_manager = None
 g_rcu_advertisement = None
 g_tivo_rcu_service = None
-g_tivo_tv_dict = {}   # {obj path: {"Trusted": True/False, "Paired": True/False, "Connected": True/False, "ServiceResolved": True/False},
-                      #  obj path2: {"Trusted": True/False, "Paired": True/False, "Connected": True/False, "ServiceResolved": True/False}, ...}
-                      # ex: {"/org/bluez/hci0/dev_00_11_22_33_44_55": {"Trusted": False, "Paired": False, "Connected": False, "ServiceResolved": False},
-                      #      "/org/bluez/hci0/dev_00_11_22_33_44_56": {"Trusted": True, "Paired": True, "Connected": True, "ServiceResolved": True}}
+# {obj path: {"Paired": True/False, "Connected": True/False, "ServiceResolved": True/False},
+g_tivo_tv_dict = {}
+#  obj path2: {"Paired": True/False, "Connected": True/False, "ServiceResolved": True/False}, ...}
+# ex: {"/org/bluez/hci0/dev_00_11_22_33_44_55": {"Paired": False, "Connected": False, "ServiceResolved": False},
+#      "/org/bluez/hci0/dev_00_11_22_33_44_56": {"Paired": True, "Connected": True, "ServiceResolved": True}}
 
 
 def register_ad_cb():
-    print(f"{g_rcu_advertisement.get_advertisement_info()} start advertising.. (press esc to exit")
+    print(
+        f"{g_rcu_advertisement.get_advertisement_info()} start advertising.. (press esc to exit")
+
 
 def register_ad_error_cb(error):
     if "AlreadyExists" in str(error):
-        print(f"{g_rcu_advertisement.get_advertisement_info()} has already registered, keep advertising.. (press esc to exit")
+        print(
+            f"{g_rcu_advertisement.get_advertisement_info()} has already registered, keep advertising.. (press esc to exit")
     else:
         print(f"Failed to register RCUAdvertisement: {str(error)}, exit!")
         closeAll()
+
 
 class TivoRCUService(dbus.service.Object):
     """
@@ -134,14 +139,11 @@ def update_state(path):
     global g_tivo_tv_dict
     tv_status = g_tivo_tv_dict.get(path, None)
     if tv_status is None:
-        tv_status = {bluetooth_constants.DEVICE_PROP_TRUSTED: None,
-                     bluetooth_constants.DEVICE_PROP_PAIRED: None,
+        tv_status = {bluetooth_constants.DEVICE_PROP_PAIRED: None,
                      bluetooth_constants.DEVICE_PROP_CONNECTED: None,
                      bluetooth_constants.DEVICE_PROP_SERVICES_RESOLVED: None}
         g_tivo_tv_dict[path] = tv_status
 
-    trusted = bluetooth_utils.get_device_property(
-        path, bluetooth_constants.DEVICE_PROP_TRUSTED)
     paired = bluetooth_utils.get_device_property(
         path, bluetooth_constants.DEVICE_PROP_PAIRED)
     connected = bluetooth_utils.get_device_property(
@@ -149,16 +151,15 @@ def update_state(path):
     service_resolved = bluetooth_utils.get_device_property(
         path, bluetooth_constants.DEVICE_PROP_SERVICES_RESOLVED)
 
-    tv_status[bluetooth_constants.DEVICE_PROP_TRUSTED] = trusted
     tv_status[bluetooth_constants.DEVICE_PROP_PAIRED] = paired
     tv_status[bluetooth_constants.DEVICE_PROP_CONNECTED] = connected
     tv_status[bluetooth_constants.DEVICE_PROP_SERVICES_RESOLVED] = service_resolved
 
     print(
-        f"update_state ok, path = {path}, tv_status: \r\nTrusted=>{tv_status[bluetooth_constants.DEVICE_PROP_TRUSTED]}\r\nPaired=>{tv_status[bluetooth_constants.DEVICE_PROP_PAIRED]}\r\nConnected=>{tv_status[bluetooth_constants.DEVICE_PROP_CONNECTED]}\r\nServiceResolved=>{tv_status[bluetooth_constants.DEVICE_PROP_SERVICES_RESOLVED]}")
+        f"update_state ok, path = {path}, tv_status: \r\nPaired=>{tv_status[bluetooth_constants.DEVICE_PROP_PAIRED]}\r\nConnected=>{tv_status[bluetooth_constants.DEVICE_PROP_CONNECTED]}\r\nServiceResolved=>{tv_status[bluetooth_constants.DEVICE_PROP_SERVICES_RESOLVED]}")
 
     global g_tivo_rcu_service
-    if trusted and paired and connected and service_resolved:
+    if paired and connected and service_resolved:
         stop_advertising()
         g_tivo_rcu_service.set_connected_device(path)
         print(
@@ -203,9 +204,6 @@ def properties_changed(interface, changed, invalidated, path):
     if interface == bluetooth_constants.DEVICE_INTERFACE:
         print(
             f"[[Properties changed, path = {path}")
-        if bluetooth_constants.DEVICE_PROP_TRUSTED in changed:
-            print(
-                f"[[Properties changed, Trusted:{changed[bluetooth_constants.DEVICE_PROP_TRUSTED]}")
         if bluetooth_constants.DEVICE_PROP_PAIRED in changed:
             print(
                 f"[[Properties changed, Paired:{changed[bluetooth_constants.DEVICE_PROP_PAIRED]}")
@@ -254,9 +252,6 @@ def interfaces_added(path, interfaces):
         print(
             f"Receive device interfaces added signal, path = {path}")
         properties = interfaces[bluetooth_constants.DEVICE_INTERFACE]
-        if (bluetooth_constants.DEVICE_PROP_TRUSTED in properties):
-            print(
-                f"Receive device interfaces added signal, Trusted:{properties[bluetooth_constants.DEVICE_PROP_TRUSTED]}")
         if (bluetooth_constants.DEVICE_PROP_PAIRED in properties):
             print(
                 f"Receive device interfaces added signal, Paired:{properties[bluetooth_constants.DEVICE_PROP_PAIRED]}")
