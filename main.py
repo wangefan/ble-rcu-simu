@@ -50,9 +50,9 @@ class TivoRCUService(dbus.service.Object):
         dbus.service.Object.__init__(self, bus, self.path)
         self.hid_service = HIDService(bus)
         self.add_service(self.hid_service)
-        
-        #Prepare voice service
-        self.tivo_ruc_dlg = TivoRcuDlg(self.onKeyEvent, self.onCaptureKeyboard)        
+
+        # Prepare voice service
+        self.tivo_ruc_dlg = TivoRcuDlg(self.onKeyEvent, self.onCaptureKeyboard)
         self.voice_service = VoiceService(bus, self.tivo_ruc_dlg)
         self.add_service(self.voice_service)
         self.add_service(DeviceInfoService(bus))
@@ -170,7 +170,7 @@ def update_state(path):
                 f"{path} disconnected, TivoRCUService is not ready, into advertising state")
             start_advertising()
             g_tivo_rcu_service.set_connected_device(None)
-        
+
 
 """
 When a connection for a device which is already known is established, a PropertiesChanged signal is
@@ -217,6 +217,7 @@ def properties_changed(interface, changed, invalidated, path):
                 f"[[Properties changed, ServiceResolved:{changed[bluetooth_constants.DEVICE_PROP_SERVICES_RESOLVED]}")
 
         update_state(path)
+
 
 """
 When a connection for a previously unknown device is established, an InterfacesAdded signal is
@@ -267,10 +268,13 @@ def interfaces_added(path, interfaces):
                 f"Receive device interfaces added signal, ServiceResolved:{properties[bluetooth_constants.DEVICE_PROP_SERVICES_RESOLVED]}")
         update_state(path)
 
+
 """
 Returns the first object that the bluez service has that has a GattManager1 interface,
 which is suppose to be the bluetooth adapter 'org/bluez/hci0'.
 """
+
+
 def find_adapter(bus):
     remote_om = dbus.Interface(bus.get_object(bluetooth_constants.BLUEZ_SERVICE_NAME, '/'),
                                bluetooth_constants.DBUS_OM_IFACE)
@@ -284,7 +288,7 @@ def find_adapter(bus):
 
 
 def start_advertising():
-    global g_ad_manager 
+    global g_ad_manager
     global g_rcu_advertisement
     # This causes BlueZ to instruct the controller to start advertising
     g_ad_manager.RegisterAdvertisement(
@@ -293,6 +297,7 @@ def start_advertising():
         reply_handler=register_ad_cb,
         error_handler=register_ad_error_cb,
     )
+
 
 def stop_advertising():
     global g_ad_manager
@@ -303,13 +308,14 @@ def stop_advertising():
         dbus.exceptions.DBusException
         pass
     print(f"{g_rcu_advertisement.get_advertisement_info()} stop advertising")
-        
+
 
 def closeAll():
     stop_advertising()
     global g_core_application
     if g_core_application != None:
         g_core_application.quit()
+
 
 def main():
     parser = argparse.ArgumentParser(description='RCU tool parameters')
@@ -333,13 +339,13 @@ def main():
 
     # handle connections status
     bus.add_signal_receiver(properties_changed,
-    dbus_interface = bluetooth_constants.DBUS_PROPERTIES,
-    signal_name = "PropertiesChanged",
-    path_keyword = "path")
+                            dbus_interface=bluetooth_constants.DBUS_PROPERTIES,
+                            signal_name="PropertiesChanged",
+                            path_keyword="path")
 
     bus.add_signal_receiver(interfaces_added,
-    dbus_interface = bluetooth_constants.DBUS_OM_IFACE,
-    signal_name = "InterfacesAdded")
+                            dbus_interface=bluetooth_constants.DBUS_OM_IFACE,
+                            signal_name="InterfacesAdded")
 
     # require bluetooth adapter
     adapter_obj = find_adapter(bus)
@@ -390,12 +396,13 @@ def main():
     global g_tivo_rcu_service
     g_tivo_rcu_service = TivoRCUService(bus)
     g_gatt_service_manager.RegisterApplication(g_tivo_rcu_service.get_path(), {},
-                                             reply_handler=register_app_cb,
-                                             error_handler=register_app_error_cb)
+                                               reply_handler=register_app_cb,
+                                               error_handler=register_app_error_cb)
 
     g_core_application.exec_()
     if g_gatt_service_manager != None:
-        g_gatt_service_manager.UnregisterApplication(g_tivo_rcu_service.get_path())
+        g_gatt_service_manager.UnregisterApplication(
+            g_tivo_rcu_service.get_path())
         print('4-1. g_gatt_service_manager.UnregisterApplication(g_tivo_rcu_service.get_path()) ok')
     print('4-2. Apapter power off')
     adapter_props.Set(bluetooth_constants.ADAPTER_INTERFACE,
