@@ -7,6 +7,7 @@ import os
 from threading import Timer
 import time
 
+
 class TivoRcuDlg(QtWidgets.QDialog):
     def __init__(self, key_event_listener, capture_keyboard_listener):
         super(TivoRcuDlg, self).__init__()
@@ -23,7 +24,7 @@ class TivoRcuDlg(QtWidgets.QDialog):
 
     def get_8k_file_path(self):
         return self.path_to_8k_file
-    
+
     def get_16k_file_path(self):
         return self.path_to_16k_file
 
@@ -123,24 +124,19 @@ class TivoRcuDlg(QtWidgets.QDialog):
         self.detectEvent(KEY_EVENT_NAME_VOLDW, KEY_EVENT_NAME_RELEASE,)
 
     def powerClicked(self):
-        if self.key_event_listener != None:
-            self.key_event_listener(KEY_EVENT_NAME_POWER)
+        self.detectEvent(KEY_EVENT_NAME_POWER, KEY_EVENT_NAME_RELEASE,)
 
     def dpadOkClicked(self):
-        if self.key_event_listener != None:
-            self.key_event_listener(KEY_EVENT_NAME_SEL)
+        self.detectEvent(KEY_EVENT_NAME_SEL, KEY_EVENT_NAME_RELEASE,)
 
     def backClicked(self):
-        if self.key_event_listener != None:
-            self.key_event_listener(KEY_EVENT_NAME_BACK)
+        self.detectEvent(KEY_EVENT_NAME_BACK, KEY_EVENT_NAME_RELEASE,)
 
     def tivoClicked(self):
-        if self.key_event_listener != None:
-            self.key_event_listener(KEY_EVENT_NAME_TIVO)
+        self.detectEvent(KEY_EVENT_NAME_TIVO, KEY_EVENT_NAME_RELEASE,)
 
     def voiceClicked(self):
-        if self.key_event_listener != None:
-            self.key_event_listener(KEY_EVENT_NAME_VOICE)
+        self.detectEvent(KEY_EVENT_NAME_VOICE, KEY_EVENT_NAME_RELEASE,)
 
     def captureKeyboardClicked(self):
         bCaptureKeyboard = self.ui.mCkbCaptureKeyboard.isChecked()
@@ -148,44 +144,34 @@ class TivoRcuDlg(QtWidgets.QDialog):
             self.capture_keyboard_listener(bCaptureKeyboard)
 
     def num0Clicked(self):
-        if self.key_event_listener != None:
-            self.key_event_listener(KEY_EVENT_NAME_0)
+        self.detectEvent(KEY_EVENT_NAME_0, KEY_EVENT_NAME_RELEASE,)
 
     def num1Clicked(self):
-        if self.key_event_listener != None:
-            self.key_event_listener(KEY_EVENT_NAME_1)
+        self.detectEvent(KEY_EVENT_NAME_1, KEY_EVENT_NAME_RELEASE,)
 
     def num2Clicked(self):
-        if self.key_event_listener != None:
-            self.key_event_listener(KEY_EVENT_NAME_2)
+        self.detectEvent(KEY_EVENT_NAME_2, KEY_EVENT_NAME_RELEASE,)
 
     def num3Clicked(self):
-        if self.key_event_listener != None:
-            self.key_event_listener(KEY_EVENT_NAME_3)
+        self.detectEvent(KEY_EVENT_NAME_3, KEY_EVENT_NAME_RELEASE,)
 
     def num4Clicked(self):
-        if self.key_event_listener != None:
-            self.key_event_listener(KEY_EVENT_NAME_4)
+        self.detectEvent(KEY_EVENT_NAME_4, KEY_EVENT_NAME_RELEASE,)
 
     def num5Clicked(self):
-        if self.key_event_listener != None:
-            self.key_event_listener(KEY_EVENT_NAME_5)
+        self.detectEvent(KEY_EVENT_NAME_5, KEY_EVENT_NAME_RELEASE,)
 
     def num6Clicked(self):
-        if self.key_event_listener != None:
-            self.key_event_listener(KEY_EVENT_NAME_6)
+        self.detectEvent(KEY_EVENT_NAME_6, KEY_EVENT_NAME_RELEASE,)
 
     def num7Clicked(self):
-        if self.key_event_listener != None:
-            self.key_event_listener(KEY_EVENT_NAME_7)
+        self.detectEvent(KEY_EVENT_NAME_7, KEY_EVENT_NAME_RELEASE,)
 
     def num8Clicked(self):
-        if self.key_event_listener != None:
-            self.key_event_listener(KEY_EVENT_NAME_8)
+        self.detectEvent(KEY_EVENT_NAME_8, KEY_EVENT_NAME_RELEASE,)
 
     def num9Clicked(self):
-        if self.key_event_listener != None:
-            self.key_event_listener(KEY_EVENT_NAME_9)
+        self.detectEvent(KEY_EVENT_NAME_9, KEY_EVENT_NAME_RELEASE,)
 
     def open8kClicked(self):
         file_path, _ = QFileDialog.getOpenFileName(
