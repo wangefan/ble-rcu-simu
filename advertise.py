@@ -2,6 +2,7 @@
 import dbus.service
 import bluetooth_constants
 import ble_hogp
+import ble_voice_service
 
 class Advertisement(dbus.service.Object):
 
@@ -106,9 +107,10 @@ class RCUAdvertisement(Advertisement):
     BASE_PATH = bluetooth_constants.BLUEZ_OBJ_ROOT + "advertisement"
     def __init__(self, bus, mac_address, index):
         Advertisement.__init__(self, bus, self.BASE_PATH, index, "peripheral")
-        self.add_service_uuid(ble_hogp.HIDService.SERVICE_UUID)
-        self.add_service_uuid(ble_hogp.BatteryService.SERVICE_UUID)
-        self.add_service_uuid(ble_hogp.DeviceInfoService.SERVICE_UUID)
+        #self.add_service_uuid(ble_hogp.HIDService.SERVICE_UUID)
+        #self.add_service_uuid(ble_hogp.BatteryService.SERVICE_UUID)
+        #self.add_service_uuid(ble_hogp.DeviceInfoService.SERVICE_UUID)
+        self.add_service_uuid(ble_voice_service.VoiceService.SERVICE_UUID)
         self.add_manufacturer_data(
             0xFFFF, [0x70, 0x74],
         )
