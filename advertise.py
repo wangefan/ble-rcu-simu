@@ -2,6 +2,7 @@
 import dbus.service
 import bluetooth_constants
 import ble_hogp
+import ble_voice_service
 
 class Advertisement(dbus.service.Object):
 
@@ -104,14 +105,22 @@ class Advertisement(dbus.service.Object):
 class RCUAdvertisement(Advertisement):
     
     BASE_PATH = bluetooth_constants.BLUEZ_OBJ_ROOT + "advertisement"
+
+    def make_manufacturer_data(self):
+        manufacturer_id = 0x21
+        version_code = 1
+        device_name= "tivo_remote"
+        manufacturer_data_string = f"{device_name}_{version_code}"
+        return manufacturer_id, bytes(manufacturer_data_string, "utf-8")
+    
     def __init__(self, bus, mac_address, index):
         Advertisement.__init__(self, bus, self.BASE_PATH, index, "peripheral")
         self.add_service_uuid(ble_hogp.HIDService.SERVICE_UUID)
         self.add_service_uuid(ble_hogp.BatteryService.SERVICE_UUID)
-        self.add_service_uuid(ble_hogp.DeviceInfoService.SERVICE_UUID)
-        self.add_manufacturer_data(
-            0xFFFF, [0x70, 0x74],
-        )
+        #self.add_service_uuid(ble_hogp.DeviceInfoService.SERVICE_UUID)
+        #self.add_service_uuid(ble_voice_service.VoiceService.SERVICE_UUID)
+        id, data = self.make_manufacturer_data()
+        self.add_manufacturer_data(id, data)
         self.mac_address = mac_address
         self.add_local_name(bluetooth_constants.DISCOVERABLE_NAME_BASE)
         self.add_discoverable(True)
