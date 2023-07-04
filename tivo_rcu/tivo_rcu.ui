@@ -13,7 +13,7 @@
   <property name="windowTitle">
    <string>Tivo RCU</string>
   </property>
-  <widget class="QPushButton" name="mDPadRight">
+  <widget class="QPushButton" name="KEY_RIGHT">
    <property name="geometry">
     <rect>
      <x>180</x>
@@ -29,7 +29,7 @@
     <number>306</number>
    </property>
   </widget>
-  <widget class="QPushButton" name="mDPadLeft">
+  <widget class="QPushButton" name="KEY_LEFT">
    <property name="geometry">
     <rect>
      <x>80</x>
@@ -45,7 +45,7 @@
     <number>306</number>
    </property>
   </widget>
-  <widget class="QPushButton" name="mDPadUp">
+  <widget class="QPushButton" name="KEY_UP">
    <property name="geometry">
     <rect>
      <x>130</x>
@@ -61,7 +61,7 @@
     <number>306</number>
    </property>
   </widget>
-  <widget class="QPushButton" name="mDPadDown">
+  <widget class="QPushButton" name="KEY_DOWN">
    <property name="geometry">
     <rect>
      <x>130</x>
@@ -77,7 +77,7 @@
     <number>306</number>
    </property>
   </widget>
-  <widget class="QPushButton" name="mDPadOk">
+  <widget class="QPushButton" name="KEY_SEL">
    <property name="geometry">
     <rect>
      <x>130</x>
@@ -93,7 +93,7 @@
     <number>306</number>
    </property>
   </widget>
-  <widget class="QPushButton" name="mNum1">
+  <widget class="QPushButton" name="KEY_1">
    <property name="geometry">
     <rect>
      <x>110</x>
@@ -109,7 +109,7 @@
     <number>306</number>
    </property>
   </widget>
-  <widget class="QPushButton" name="mNum2">
+  <widget class="QPushButton" name="KEY_2">
    <property name="geometry">
     <rect>
      <x>170</x>
@@ -125,7 +125,7 @@
     <number>306</number>
    </property>
   </widget>
-  <widget class="QPushButton" name="mNum3">
+  <widget class="QPushButton" name="KEY_3">
    <property name="geometry">
     <rect>
      <x>230</x>
@@ -141,7 +141,7 @@
     <number>306</number>
    </property>
   </widget>
-  <widget class="QPushButton" name="mNum6">
+  <widget class="QPushButton" name="KEY_6">
    <property name="geometry">
     <rect>
      <x>230</x>
@@ -157,7 +157,7 @@
     <number>306</number>
    </property>
   </widget>
-  <widget class="QPushButton" name="mNum4">
+  <widget class="QPushButton" name="KEY_4">
    <property name="geometry">
     <rect>
      <x>110</x>
@@ -173,7 +173,7 @@
     <number>306</number>
    </property>
   </widget>
-  <widget class="QPushButton" name="mNum5">
+  <widget class="QPushButton" name="KEY_5">
    <property name="geometry">
     <rect>
      <x>170</x>
@@ -189,7 +189,7 @@
     <number>306</number>
    </property>
   </widget>
-  <widget class="QPushButton" name="mNum9">
+  <widget class="QPushButton" name="KEY_9">
    <property name="geometry">
     <rect>
      <x>230</x>
@@ -205,7 +205,7 @@
     <number>306</number>
    </property>
   </widget>
-  <widget class="QPushButton" name="mNum7">
+  <widget class="QPushButton" name="KEY_7">
    <property name="geometry">
     <rect>
      <x>110</x>
@@ -221,7 +221,7 @@
     <number>306</number>
    </property>
   </widget>
-  <widget class="QPushButton" name="mNum8">
+  <widget class="QPushButton" name="KEY_8">
    <property name="geometry">
     <rect>
      <x>170</x>
@@ -237,7 +237,7 @@
     <number>306</number>
    </property>
   </widget>
-  <widget class="QPushButton" name="mNum0">
+  <widget class="QPushButton" name="KEY_0">
    <property name="geometry">
     <rect>
      <x>170</x>
@@ -253,7 +253,7 @@
     <number>306</number>
    </property>
   </widget>
-  <widget class="QPushButton" name="mBack">
+  <widget class="QPushButton" name="KEY_BACK">
    <property name="geometry">
     <rect>
      <x>80</x>
@@ -269,7 +269,7 @@
     <number>306</number>
    </property>
   </widget>
-  <widget class="QPushButton" name="mVolDown">
+  <widget class="QPushButton" name="KEY_VOLDW">
    <property name="geometry">
     <rect>
      <x>20</x>
@@ -285,7 +285,7 @@
     <number>306</number>
    </property>
   </widget>
-  <widget class="QPushButton" name="mVolUp">
+  <widget class="QPushButton" name="KEY_VOLUP">
    <property name="geometry">
     <rect>
      <x>20</x>
@@ -301,7 +301,7 @@
     <number>306</number>
    </property>
   </widget>
-  <widget class="QPushButton" name="mChanDown">
+  <widget class="QPushButton" name="KEY_CHANNELDW">
    <property name="geometry">
     <rect>
      <x>240</x>
@@ -317,7 +317,7 @@
     <number>306</number>
    </property>
   </widget>
-  <widget class="QPushButton" name="mChanUp">
+  <widget class="QPushButton" name="KEY_CHANNELUP">
    <property name="geometry">
     <rect>
      <x>240</x>
@@ -333,7 +333,7 @@
     <number>306</number>
    </property>
   </widget>
-  <widget class="QPushButton" name="mTivo">
+  <widget class="QPushButton" name="KEY_TIVO">
    <property name="geometry">
     <rect>
      <x>120</x>
@@ -349,7 +349,7 @@
     <number>306</number>
    </property>
   </widget>
-  <widget class="QPushButton" name="mPower">
+  <widget class="QPushButton" name="KEY_POWER">
    <property name="geometry">
     <rect>
      <x>20</x>
@@ -389,7 +389,7 @@
     <string>Press keyboard &quot;Esc&quot; to exit ..</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="mVoice">
+  <widget class="QPushButton" name="KEY_VOICE">
    <property name="geometry">
     <rect>
      <x>180</x>
@@ -524,30 +524,30 @@
   </widget>
   <zorder>groupBox_2</zorder>
   <zorder>groupBox</zorder>
-  <zorder>mDPadRight</zorder>
-  <zorder>mDPadLeft</zorder>
-  <zorder>mDPadUp</zorder>
-  <zorder>mDPadDown</zorder>
-  <zorder>mDPadOk</zorder>
-  <zorder>mNum1</zorder>
-  <zorder>mNum2</zorder>
-  <zorder>mNum3</zorder>
-  <zorder>mNum6</zorder>
-  <zorder>mNum4</zorder>
-  <zorder>mNum5</zorder>
-  <zorder>mNum9</zorder>
-  <zorder>mNum7</zorder>
-  <zorder>mNum8</zorder>
-  <zorder>mNum0</zorder>
-  <zorder>mBack</zorder>
-  <zorder>mVolDown</zorder>
-  <zorder>mVolUp</zorder>
-  <zorder>mChanDown</zorder>
-  <zorder>mChanUp</zorder>
-  <zorder>mTivo</zorder>
-  <zorder>mPower</zorder>
+  <zorder>KEY_RIGHT</zorder>
+  <zorder>KEY_LEFT</zorder>
+  <zorder>KEY_UP</zorder>
+  <zorder>KEY_DOWN</zorder>
+  <zorder>KEY_SEL</zorder>
+  <zorder>KEY_1</zorder>
+  <zorder>KEY_2</zorder>
+  <zorder>KEY_3</zorder>
+  <zorder>KEY_6</zorder>
+  <zorder>KEY_4</zorder>
+  <zorder>KEY_5</zorder>
+  <zorder>KEY_9</zorder>
+  <zorder>KEY_7</zorder>
+  <zorder>KEY_8</zorder>
+  <zorder>KEY_0</zorder>
+  <zorder>KEY_BACK</zorder>
+  <zorder>KEY_VOLDW</zorder>
+  <zorder>KEY_VOLUP</zorder>
+  <zorder>KEY_CHANNELDW</zorder>
+  <zorder>KEY_CHANNELUP</zorder>
+  <zorder>KEY_TIVO</zorder>
+  <zorder>KEY_POWER</zorder>
   <zorder>info</zorder>
-  <zorder>mVoice</zorder>
+  <zorder>KEY_VOICE</zorder>
   <zorder>mCkbCaptureKeyboard</zorder>
   <zorder>mLbPathTo8k</zorder>
   <zorder>mLbPathTo16k</zorder>

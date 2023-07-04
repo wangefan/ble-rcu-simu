@@ -1,22 +1,16 @@
 #!/usr/bin/python3
-from ble_voice_service import VoiceService
 import bluetooth_constants
 import dbus.mainloop.glib
 from gi.repository import GLib
 import dbus
 import dbus.exceptions
 import dbus.service
-from advertise import RCUAdvertisement
+from tivo_rcu.advertise import RCUAdvertisement
 from agent import Agent
-from ble_hogp import DeviceInfoService, BatteryService, HIDService
-from key_event_monitor import KeyEventMonitor
-from enum import Enum
-from PyQt5 import QtCore, QtWidgets
-from key_event_name import KEY_EVENT_NAME_VOICE
-from tivo_rcu import TivoRcuDlg
 import argparse
 import bluetooth_utils
-
+from tivo_rcu.tivo_rcu_service import TivoRCUService
+from PyQt5 import QtCore, QtWidgets
 
 g_core_application = None
 g_ad_manager = None
@@ -42,88 +36,6 @@ def register_ad_error_cb(error):
     else:
         print(f"Failed to register RCUAdvertisement: {str(error)}, exit!")
         closeAll()
-
-
-class TivoRCUService(dbus.service.Object):
-    """
-    org.bluez.GattApplication1 interface implementation
-    """
-
-    def __init__(self, bus):
-        self.path = '/'
-        self.services = []
-        dbus.service.Object.__init__(self, bus, self.path)
-        self.hid_service = HIDService(bus)
-        self.add_service(self.hid_service)
-
-        # Prepare voice service
-        self.tivo_ruc_dlg = TivoRcuDlg(self.onKeyEvent, self.onCaptureKeyboard)
-        self.voice_service = VoiceService(bus, self.tivo_ruc_dlg)
-        self.add_service(self.voice_service)
-        self.add_service(DeviceInfoService(bus))
-        self.add_service(BatteryService(bus))
-
-        self.connected_device_path = None
-        self.KeyEventMonitor = KeyEventMonitor(self.onKeyEvent, self.onExit)
-        self.KeyEventMonitor.start()
-
-    def get_path(self):
-        return dbus.ObjectPath(self.path)
-
-    def add_service(self, service):
-        self.services.append(service)
-
-    # The Object Manager interface method GetManagedObjects is exported. This makes the
-    # method available to be called by other DBus applications, in our case the BlueZ bluetooth
-    # daemon and this is how it determines the list of services, characteristics and descriptors
-    # implemented by our application and results in DBus objects for each being registered on the
-    # system bus.
-    @dbus.service.method(bluetooth_constants.DBUS_OM_IFACE, out_signature='a{oa{sa{sv}}}')
-    def GetManagedObjects(self):
-        response = {}
-
-        for service in self.services:
-            response[service.get_path()] = service.get_properties()
-            chrcs = service.get_characteristics()
-            for chrc in chrcs:
-                response[chrc.get_path()] = chrc.get_properties()
-                descs = chrc.get_descriptors()
-                for desc in descs:
-                    response[desc.get_path()] = desc.get_properties()
-
-        return response
-
-    def set_connected_device(self, device_path):
-        self.connected_device_path = device_path
-        if self.connected_device_path != None:
-            self.tivo_ruc_dlg.show()
-        else:
-            self.tivo_ruc_dlg.hide()
-
-    def get_connected_device(self):
-        return self.connected_device_path
-
-    def onExit(self):
-        print(f"onExit begin")
-        connected_device = self.get_connected_device()
-        # if there is connection exist, disconnect it
-        if connected_device != None:
-            device_interface = bluetooth_utils.get_object_interface(
-                connected_device, bluetooth_constants.DEVICE_INTERFACE)
-            device_interface.Disconnect()
-            print(f"onExit, disconnect {connected_device} end")
-        closeAll()
-
-    def onKeyEvent(self, key_event_name):
-        if self.connected_device_path:
-            self.hid_service.onKeyEvent(key_event_name)
-            if KEY_EVENT_NAME_VOICE == key_event_name:
-                self.voice_service.VoiceSearch()
-        else:
-            pass
-
-    def onCaptureKeyboard(self, b_capture):
-        self.KeyEventMonitor.setCaptureKeyboard(b_capture)
 
 
 def register_app_cb():
@@ -389,7 +301,7 @@ def main():
     g_core_application = QtWidgets.QApplication([])
 
     global g_tivo_rcu_service
-    g_tivo_rcu_service = TivoRCUService(bus)
+    g_tivo_rcu_service = TivoRCUService(bus, closeAll) # Fix me, factory to get TivoRCUService
     g_gatt_service_manager.RegisterApplication(g_tivo_rcu_service.get_path(), {},
                                                reply_handler=register_app_cb,
                                                error_handler=register_app_error_cb)

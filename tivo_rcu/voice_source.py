@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-from tivo_rcu import TivoRcuDlg
+from tivo_rcu.tivo_rcu import TivoRcuDlg
 import wave
 import os
 from enum import Enum

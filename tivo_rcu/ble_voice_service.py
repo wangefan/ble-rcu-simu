@@ -5,7 +5,7 @@ from ble_base import Characteristic, Service
 import dbus.service
 from gi.repository import GLib
 import struct
-from voice_source import DataState, VoiceSource
+from tivo_rcu.voice_source import DataState, VoiceSource
 
 TV_TX_GET_CAPS = 0x0A
 TV_TX_MIC_OPEN = 0x0C

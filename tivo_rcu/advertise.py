@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 import dbus.service
 import bluetooth_constants
-import ble_hogp
-import ble_voice_service
+import tivo_rcu.ble_hogp
+import tivo_rcu.ble_voice_service
 
 class Advertisement(dbus.service.Object):
 
@@ -115,8 +115,8 @@ class RCUAdvertisement(Advertisement):
     
     def __init__(self, bus, mac_address, index):
         Advertisement.__init__(self, bus, self.BASE_PATH, index, "peripheral")
-        self.add_service_uuid(ble_hogp.HIDService.SERVICE_UUID)
-        self.add_service_uuid(ble_hogp.BatteryService.SERVICE_UUID)
+        self.add_service_uuid(tivo_rcu.ble_hogp.HIDService.SERVICE_UUID)
+        self.add_service_uuid(tivo_rcu.ble_hogp.BatteryService.SERVICE_UUID)
         #self.add_service_uuid(ble_hogp.DeviceInfoService.SERVICE_UUID)
         #self.add_service_uuid(ble_voice_service.VoiceService.SERVICE_UUID)
         id, data = self.make_manufacturer_data()
