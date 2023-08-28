@@ -5,7 +5,7 @@ from gi.repository import GLib
 import dbus
 import dbus.exceptions
 import dbus.service
-from tivo_rcu.advertise import RCUAdvertisement
+from tivo_rcu.advertise import TiVoS4KRCUAdvertisement
 from agent import Agent
 import argparse
 import bluetooth_utils
@@ -260,6 +260,9 @@ def main():
         print('adapter_obj not found')
         return
 
+    global g_core_application
+    g_core_application = QtWidgets.QApplication([])
+
     print("1. Power on the bluetooth adapter..")
     adapter_props = dbus.Interface(bus.get_object(
         bluetooth_constants.BLUEZ_SERVICE_NAME, adapter_obj), bluetooth_constants.DBUS_PROPERTIES)
@@ -274,6 +277,12 @@ def main():
                           bluetooth_constants.DISCOVERABLE_NAME_BASE))
     mac_address = adapter_props.Get(
         bluetooth_constants.ADAPTER_INTERFACE, bluetooth_constants.ADAPTER_PROP_MAC_ADDRESS)
+    
+    global g_rcu_advertisement
+    g_rcu_advertisement = TiVoS4KRCUAdvertisement(bus, mac_address, 0)
+
+    global g_tivo_rcu_service
+    g_tivo_rcu_service = TivoRCUService(bus, closeAll) # Fix me, factory to get TivoRCUService
 
     print(f"2. Agent procedure, register with io: {io_capability}")
     AGENT_PATH = bluetooth_constants.BLUEZ_OBJ_ROOT + "agent"
@@ -287,8 +296,6 @@ def main():
     global g_ad_manager
     g_ad_manager = dbus.Interface(bus.get_object(
         bluetooth_constants.BLUEZ_SERVICE_NAME, adapter_obj), bluetooth_constants.ADVERTISING_MANAGER_INTERFACE)
-    global g_rcu_advertisement
-    g_rcu_advertisement = RCUAdvertisement(bus, mac_address, 0)
     start_advertising()
 
     print('4. Registering GATT procedure')
@@ -297,11 +304,6 @@ def main():
         bus.get_object(bluetooth_constants.BLUEZ_SERVICE_NAME, adapter_obj),
         bluetooth_constants.GATT_MANAGER_INTERFACE)
 
-    global g_core_application
-    g_core_application = QtWidgets.QApplication([])
-
-    global g_tivo_rcu_service
-    g_tivo_rcu_service = TivoRCUService(bus, closeAll) # Fix me, factory to get TivoRCUService
     g_gatt_service_manager.RegisterApplication(g_tivo_rcu_service.get_path(), {},
                                                reply_handler=register_app_cb,
                                                error_handler=register_app_error_cb)

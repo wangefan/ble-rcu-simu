@@ -102,7 +102,7 @@ class Advertisement(dbus.service.Object):
     def Release(self):
         print("%s: Released!" % self.path)
 
-class RCUAdvertisement(Advertisement):
+class TiVoS4KRCUAdvertisement(Advertisement):
     
     BASE_PATH = bluetooth_constants.BLUEZ_OBJ_ROOT + "advertisement"
 
