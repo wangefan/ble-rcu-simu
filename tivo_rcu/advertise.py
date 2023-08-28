@@ -117,10 +117,11 @@ class RCUAdvertisement(Advertisement):
         Advertisement.__init__(self, bus, self.BASE_PATH, index, "peripheral")
         self.add_service_uuid(tivo_rcu.ble_hogp.HIDService.SERVICE_UUID)
         self.add_service_uuid(tivo_rcu.ble_hogp.BatteryService.SERVICE_UUID)
+        self.add_service_uuid('ab5e0001-5a21-4f05-bc7d-af01f617b664')
         #self.add_service_uuid(ble_hogp.DeviceInfoService.SERVICE_UUID)
         #self.add_service_uuid(ble_voice_service.VoiceService.SERVICE_UUID)
         id, data = self.make_manufacturer_data()
-        self.add_manufacturer_data(id, data)
+        #self.add_manufacturer_data(id, data)
         self.mac_address = mac_address
         self.add_local_name(bluetooth_constants.DISCOVERABLE_NAME_BASE)
         self.add_discoverable(True)

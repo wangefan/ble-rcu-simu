@@ -76,6 +76,12 @@ def atv_tx_resp_cb(value):
         return
 
     print('TX Resp value: ' + value[0])
+
+def close_mic():
+    print('Close mic')
+    cmd_mic_close = bytearray([ATV_TX_MIC_CLOSE])
+    atv_tx_chrc[0].WriteValue(cmd_mic_close, {}, dbus_interface=GATT_CHRC_IFACE)
+
 #This callback comes with control command sequence, such as "search", "audio start", "audio end", etc.
 #After receiving the "search" command, we need to respond using mic_open with codec_used in TX char
 def atv_ctl_changed_cb(iface, changed_props, invalidated_props):
@@ -103,6 +109,8 @@ def atv_ctl_changed_cb(iface, changed_props, invalidated_props):
     if int(flags) == ATV_CTL_SEARCH:
         print('CTL Search command received')
         atv_tx_chrc[0].WriteValue(cmd_mic_open,{}, dbus_interface=GATT_CHRC_IFACE)
+        timer = threading.Timer(3, close_mic)
+        timer.start()
 
     if int(flags) == ATV_CTL_AUDIO_START:
         print('CTL Audio Start command received')
@@ -155,8 +163,9 @@ def ble_worker():
         ble_packets_array.extend(bytes(item))
 
         if len(ble_packets_array) == AUDIO_FRAME_LENGTH:
+            print(f'One complete frame received, ble_packets_array:', ble_packets_array[0:6])
             with open(adpcm_filename, 'ab') as w:
-                w.write(ble_packets_array[6:]) #exlcude the 6 bytes header while writing
+                w.write(ble_packets_array) #exlcude the 6 bytes header while writing
 
             ble_packets_array.clear() #clear itself after one complete frame
 
