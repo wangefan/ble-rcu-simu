@@ -6,6 +6,8 @@ import tivo_rcu.ble_voice_service
 
 class Advertisement(dbus.service.Object):
 
+    DISCOVERABLE_NAME = "TiVo Remote"
+
     def __init__(self, bus, path, index, advertising_type):
         self.path = path + str(index)
         self.bus = bus
@@ -56,7 +58,7 @@ class Advertisement(dbus.service.Object):
 
     def get_advertisement_info(self):
         advertisement_info = "{} [{}]".format(
-            bluetooth_constants.DISCOVERABLE_NAME_BASE, self.mac_address)
+            self.DISCOVERABLE_NAME, self.mac_address)
         return advertisement_info
 
     def add_service_uuid(self, uuid):
@@ -122,6 +124,6 @@ class TiVoS4KRCUAdvertisement(Advertisement):
         id, data = self.make_manufacturer_data()
         self.add_manufacturer_data(id, data)
         self.mac_address = mac_address
-        self.add_local_name(bluetooth_constants.DISCOVERABLE_NAME_BASE)
+        self.add_local_name(self.DISCOVERABLE_NAME)
         self.add_discoverable(True)
         self.include_tx_power = True
