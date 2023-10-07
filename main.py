@@ -5,18 +5,20 @@ from gi.repository import GLib
 import dbus
 import dbus.exceptions
 import dbus.service
+from sharp_rcu.advertise import SharpRCUAdvertisement
+from sharp_rcu.sharp_rcu_service import SharpRCUService
 from tivo_rcu.advertise import TiVoS4KRCUAdvertisement
+from tivo_rcu.tivo_rcu_service import TivoRCUService
 from agent import Agent
 import argparse
 import bluetooth_utils
-from tivo_rcu.tivo_rcu_service import TivoRCUService
 from PyQt5 import QtCore, QtWidgets
 
 g_core_application = None
 g_ad_manager = None
 g_gatt_service_manager = None
 g_rcu_advertisement = None
-g_tivo_rcu_service = None
+g_rcu_service = None
 # {obj path: {"Paired": True/False, "Connected": True/False, "ServiceResolved": True/False},
 g_tivo_tv_dict = {}
 #  obj path2: {"Paired": True/False, "Connected": True/False, "ServiceResolved": True/False}, ...}
@@ -70,19 +72,19 @@ def update_state(path):
     print(
         f"update_state ok, path = {path}, tv_status: \r\nPaired=>{tv_status[bluetooth_constants.DEVICE_PROP_PAIRED]}\r\nConnected=>{tv_status[bluetooth_constants.DEVICE_PROP_CONNECTED]}\r\nServiceResolved=>{tv_status[bluetooth_constants.DEVICE_PROP_SERVICES_RESOLVED]}")
 
-    global g_tivo_rcu_service
+    global g_rcu_service
     if paired and connected and service_resolved:
         stop_advertising()
-        g_tivo_rcu_service.set_connected_device(path)
+        g_rcu_service.set_connected_device(path)
         print(
-            f"{path} connected! TivoRCUService is ready, press any key to send the events.. (press esc to exit")
+            f"{path} connected! {g_rcu_service.get_name()} is ready, press any key to send the events.. (press esc to exit")
     else:
-        connected_device_path = g_tivo_rcu_service.get_connected_device()
+        connected_device_path = g_rcu_service.get_connected_device()
         if connected_device_path == path:
             print(
-                f"{path} disconnected, TivoRCUService is not ready, into advertising state")
+                f"{path} disconnected, {g_rcu_service.get_name()} is not ready, into advertising state")
             start_advertising()
-            g_tivo_rcu_service.set_connected_device(None)
+            g_rcu_service.set_connected_device(None)
 
 
 """
@@ -226,8 +228,10 @@ def closeAll():
 
 def main():
     parser = argparse.ArgumentParser(description='RCU tool parameters')
-    parser.add_argument('-io', dest='io_capability_type', nargs='?', type=int,
+    parser.add_argument('-io', dest='io_capability_type', nargs='?', type=int, default=0,
                         help='Specify the IO capability of the device, 0: NoInputNoOutput, 1: DisplayYesNo, 2: KeyboardDisplay, 3: DisplayOnly, 4:  KeyboardOnly')
+    parser.add_argument('-rc', dest='rc_type', nargs='?', type=int, default=0,
+                        help='Specify RCU type, 0: Sharp, 1: TiVo Remote')
     args = parser.parse_args()
 
     io_capability_type = args.io_capability_type
@@ -240,6 +244,8 @@ def main():
         io_capability = "DisplayOnly"
     elif io_capability_type == 4:
         io_capability = "KeyboardOnly"
+
+    rc_type = args.rc_type
 
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
     bus = dbus.SystemBus()
@@ -276,10 +282,21 @@ def main():
         bluetooth_constants.ADAPTER_INTERFACE, bluetooth_constants.ADAPTER_PROP_MAC_ADDRESS)
     
     global g_rcu_advertisement
-    g_rcu_advertisement = TiVoS4KRCUAdvertisement(bus, mac_address, 0)
-
-    global g_tivo_rcu_service
-    g_tivo_rcu_service = TivoRCUService(bus, closeAll) # Fix me, factory to get TivoRCUService
+    global g_rcu_service
+    
+    
+    if rc_type == 1:
+        g_rcu_advertisement = TiVoS4KRCUAdvertisement(bus, mac_address, 0)
+        g_rcu_service = TivoRCUService(bus, closeAll) # Fix me, factory to get TivoRCUService
+        adapter_props.Set(bluetooth_constants.ADAPTER_INTERFACE,
+                      bluetooth_constants.ADAPTER_PROP_ALIAS, dbus.String(
+                          TiVoS4KRCUAdvertisement.DISCOVERABLE_NAME))
+    elif rc_type == 0:
+        g_rcu_advertisement = SharpRCUAdvertisement(bus, mac_address, 0)
+        g_rcu_service = SharpRCUService(bus, closeAll) # Fix me, factory to get SharpRCUService
+        adapter_props.Set(bluetooth_constants.ADAPTER_INTERFACE,
+                      bluetooth_constants.ADAPTER_PROP_ALIAS, dbus.String(
+                          SharpRCUAdvertisement.DISCOVERABLE_NAME))
 
     print(f"2. Agent procedure, register with io: {io_capability}")
     AGENT_PATH = bluetooth_constants.BLUEZ_OBJ_ROOT + "agent"
@@ -301,15 +318,15 @@ def main():
         bus.get_object(bluetooth_constants.BLUEZ_SERVICE_NAME, adapter_obj),
         bluetooth_constants.GATT_MANAGER_INTERFACE)
 
-    g_gatt_service_manager.RegisterApplication(g_tivo_rcu_service.get_path(), {},
+    g_gatt_service_manager.RegisterApplication(g_rcu_service.get_path(), {},
                                                reply_handler=register_app_cb,
                                                error_handler=register_app_error_cb)
 
     g_core_application.exec_()
     if g_gatt_service_manager != None:
         g_gatt_service_manager.UnregisterApplication(
-            g_tivo_rcu_service.get_path())
-        print('4-1. g_gatt_service_manager.UnregisterApplication(g_tivo_rcu_service.get_path()) ok')
+            g_rcu_service.get_path())
+        print('4-1. g_gatt_service_manager.UnregisterApplication(g_rcu_service.get_path()) ok')
     print('4-2. Apapter power off')
     adapter_props.Set(bluetooth_constants.ADAPTER_INTERFACE,
                       bluetooth_constants.ADAPTER_PROP_POWER, dbus.Boolean(0))

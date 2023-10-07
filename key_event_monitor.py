@@ -28,6 +28,9 @@ class KeyEventMonitor(threading.Thread):
         print(f'KeyEventMonitor.handleClick, key_name = {key_name}')
         self.key_event_listener(key_name, True)
         self.key_event_listener(key_name, False)
+    
+    def fireKey(self, key_name):
+        keyboard.press(key_name)
 
     def run(self):
         print('KeyEventMonitor thread start to run')

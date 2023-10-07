@@ -3,14 +3,14 @@ import dbus.service
 import bluetooth_constants
 import bluetooth_utils
 from gi.repository import GLib
-from tivo_rcu.ble_hogp import DeviceInfoService, BatteryService, HIDService
+from sharp_rcu.ble_hogp import DeviceInfoService, BatteryService, HIDService
 from key_event_monitor import KeyEventMonitor
-from tivo_rcu.tivo_rcu import TivoRcuDlg
-from tivo_rcu.ble_voice_service import VoiceService
+from sharp_rcu.sharp_rcu import SharpRcuDlg
+from sharp_rcu.ble_voice_service import VoiceService
 import json
 
 
-class TivoRCUService(dbus.service.Object):
+class SharpRCUService(dbus.service.Object):
     def __init__(self, bus, exit_listener):
         self.path = '/'
         self.services = []
@@ -18,16 +18,16 @@ class TivoRCUService(dbus.service.Object):
 
         # Prepare json object, load configuration from json file.
         key_descriptor_obj = None
-        with open('./tivo_rcu/tivo_rcu_descriptor.json', 'r') as f:
+        with open('./sharp_rcu/sharp_rcu_descriptor.json', 'r') as f:
             key_descriptor_obj = json.load(f) 
 
         self.hid_service = HIDService(bus, key_descriptor_obj)
         self.add_service(self.hid_service)
 
         # Prepare voice service
-        self.tivo_ruc_dlg = TivoRcuDlg(
-            self.onKeyEvent, self.onCaptureKeyboard, key_descriptor_obj)
-        self.voice_service = VoiceService(bus, self.tivo_ruc_dlg)
+        self.ruc_dlg = SharpRcuDlg(
+            self.onKeyEvent, self.onCaptureKeyboard, key_descriptor_obj, self.onKeyEsc)
+        self.voice_service = VoiceService(bus, self.ruc_dlg)
         self.add_service(self.voice_service)
         self.add_service(DeviceInfoService(bus))
         self.add_service(BatteryService(bus))
@@ -40,9 +40,9 @@ class TivoRCUService(dbus.service.Object):
 
     def get_path(self):
         return dbus.ObjectPath(self.path)
-
+    
     def get_name(self):
-        return "TivoRCUService"
+        return "SharpRCUService"
 
     def add_service(self, service):
         self.services.append(service)
@@ -70,9 +70,9 @@ class TivoRCUService(dbus.service.Object):
     def set_connected_device(self, device_path):
         self.connected_device_path = device_path
         if self.connected_device_path != None:
-            self.tivo_ruc_dlg.show()
+            self.ruc_dlg.show()
         else:
-            self.tivo_ruc_dlg.hide()
+            self.ruc_dlg.hide()
 
     def get_connected_device(self):
         return self.connected_device_path
@@ -88,11 +88,17 @@ class TivoRCUService(dbus.service.Object):
             print(f"onExit, disconnect {connected_device} end")
         self.exit_listener()
 
+    def onKeyEsc(self):
+        print(f"onKeyEsc begin")
+        self.KeyEventMonitor.fireKey('esc')
+
     def onKeyEvent(self, key_name, pressed):
         if self.connected_device_path:
             self.hid_service.onKeyEvent(key_name, pressed)
-            if 'KEY_VOICE' == key_name:
-                self.voice_service.VoiceSearch()
+            if 'KEY_SHARP_VOICE' == key_name:
+                self.voice_service.HTT(pressed)
+            elif 'KEY_SHARP_VOICE_SIMULATE' == key_name and pressed == False:
+                self.voice_service.simulatingHTT()
         else:
             pass
 
