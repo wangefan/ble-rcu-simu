@@ -9,6 +9,11 @@ bleQ = queue.Queue() #receiver queue to save adpcm packet to file
 decoderQ = queue.Queue() #decoder queue to decode adpcm file into wav file
 
 ble_packets_array = bytearray()
+ble_packets_array_to_write = bytearray()
+
+RCU_VERSION_0_4 = 0
+RCU_VERSION_1_0 = 1
+rcu_version = RCU_VERSION_0_4
 
 try:
   from gi.repository import GObject
@@ -29,10 +34,18 @@ DBUS_PROP_IFACE =    'org.freedesktop.DBus.Properties'
 GATT_SERVICE_IFACE = 'org.bluez.GattService1'
 GATT_CHRC_IFACE =    'org.bluez.GattCharacteristic1'
 
-ATV_SVC_UUID =     'ab5e0001-5a21-4f05-bc7d-af01f617b664'
-ATV_CHAR_TX_UUID = 'ab5e0002-5a21-4f05-bc7d-af01f617b664'
-ATV_CHAR_RX_UUID = 'ab5e0003-5a21-4f05-bc7d-af01f617b664'
-ATV_CHAR_CTL_UUID = 'ab5e0004-5a21-4f05-bc7d-af01f617b664'
+VOICE_SERVICE_INFO = {
+    'ab5e0001-5a21-4f05-bc7d-af01f617b664': {
+        'CHAR_TX_UUID': 'ab5e0002-5a21-4f05-bc7d-af01f617b664',
+        'CHAR_RX_UUID': 'ab5e0003-5a21-4f05-bc7d-af01f617b664',
+        'CHAR_CTL_UUID': 'ab5e0004-5a21-4f05-bc7d-af01f617b664',
+    },
+    'b9524502-bb08-11ec-8422-0242ac120002': {
+        'CHAR_TX_UUID': 'b9524732-bb08-11ec-8422-0242ac120002',
+        'CHAR_RX_UUID': 'b95249d0-bb08-11ec-8422-0242ac120002',
+        'CHAR_CTL_UUID': 'b9524b06-bb08-11ec-8422-0242ac120002',
+    }
+}
 
 ATV_CTL_AUDIO_END = 0x00
 ATV_CTL_AUDIO_START = 0x04
@@ -61,11 +74,28 @@ def generic_error_cb(error):
     print('D-Bus call failed: ' + str(error))
     mainloop.quit()
 
-def atv_ctl_notify_cb():
-    print('ATV CTL Notifications enabled')
+def send_get_caps_cmd_0_4():
     #Get cap (0x0A), 0x00,0x04 (v0.4), 0x00,0x01 (8Khz 16bits)
     cmd_get_caps = bytearray([ATV_TX_GET_CAPS, 0x00, 0x04, 0x00, 0x01])
     atv_tx_chrc[0].WriteValue(cmd_get_caps, {}, dbus_interface=GATT_CHRC_IFACE)
+    print('CTL Get CAPS send:')
+    print(''.join('{:02x}'.format(x) for x in cmd_get_caps))
+
+def send_get_caps_cmd_1_0():
+    #Get cap (0x0A), 0x01, 0x00 (v1.0), 0x00, 0x03 (constant value that is used for compatibility with the previous spec.))
+    cmd_get_caps = bytearray([ATV_TX_GET_CAPS, 0x01, 0x00, 0x00, 0x03, 0x03])
+    atv_tx_chrc[0].WriteValue(cmd_get_caps, {}, dbus_interface=GATT_CHRC_IFACE)
+    print('CTL Get CAPS send:')
+    print(''.join('{:02x}'.format(x) for x in cmd_get_caps))
+
+def atv_ctl_notify_cb():
+    print('ATV CTL Notifications enabled')
+    global rcu_version
+    if rcu_version == RCU_VERSION_0_4:
+        send_get_caps_cmd_0_4()
+    elif rcu_version == RCU_VERSION_1_0:
+        send_get_caps_cmd_1_0()
+
 
 def atv_rx_notify_cb():
     print('ATV RX Notifications enabled')
@@ -121,6 +151,18 @@ def atv_ctl_changed_cb(iface, changed_props, invalidated_props):
         codec_cap = int()
         print('CTL Get CAPS RESP received:')
         print(''.join('{:02x}'.format(x) for x in value[:9]))
+        global rcu_version
+        global AUDIO_FRAME_LENGTH
+        if major_ver == 0 and minor_ver == 0x04:
+            print('CTL Get CAPS RESP v0.4 received')
+            rcu_version = RCU_VERSION_0_4
+            AUDIO_FRAME_LENGTH = 134 # 6bytes header + 128 bytes adpcm data
+        elif major_ver == 0 and minor_ver == 0x10:
+            print('CTL Get CAPS RESP v1.0 received')
+            rcu_version = RCU_VERSION_1_0
+            AUDIO_FRAME_LENGTH = 128 #128 bytes adpcm data without header
+        else:
+            print('CTL Get CAPS RESP unknown version received')
 
     if int(flags) == ATV_CTL_MIC_OPEN_RESP:
         print('CTL MIC Open RESP received')
@@ -147,18 +189,25 @@ def decoder_worker():
 
 
 def ble_worker():
+    global ble_packets_array
+    global ble_packets_array_to_write
     while True:
         item = bleQ.get()
         print(f'Working on item')
         print(''.join('{:02x}'.format(x) for x in item))
         print(f'Finished item')
         ble_packets_array.extend(bytes(item))
-
-        if len(ble_packets_array) == AUDIO_FRAME_LENGTH:
+        l = len(ble_packets_array)
+        if l >= AUDIO_FRAME_LENGTH:
+            ble_packets_array_to_write.extend(ble_packets_array[0:AUDIO_FRAME_LENGTH])
+            ble_packets_array = ble_packets_array[AUDIO_FRAME_LENGTH:]
+            print(f'write to file: {adpcm_filename} with{AUDIO_FRAME_LENGTH} bytes')
             with open(adpcm_filename, 'ab') as w:
-                w.write(ble_packets_array[6:]) #exlcude the 6 bytes header while writing
-
-            ble_packets_array.clear() #clear itself after one complete frame
+                if rcu_version == RCU_VERSION_0_4:
+                    w.write(ble_packets_array_to_write[6:]) # exclude the 6 bytes header while writing
+                else:
+                    w.write(ble_packets_array_to_write)
+            ble_packets_array_to_write.clear() #clear itself after one complete frame
 
         bleQ.task_done()
 
@@ -205,22 +254,22 @@ def start_atv_client():
                                  error_handler=generic_error_cb,
                                  dbus_interface=GATT_CHRC_IFACE)
 
-def process_atv_chrc(chrc_path):
+def process_atv_chrc(chrc_path, service_uuids_info):
     chrc = bus.get_object(BLUEZ_SERVICE_NAME, chrc_path)
     chrc_props = chrc.GetAll(GATT_CHRC_IFACE,
                              dbus_interface=DBUS_PROP_IFACE)
 
     uuid = chrc_props['UUID']
 
-    if uuid == ATV_CHAR_CTL_UUID:
+    if uuid == service_uuids_info['CHAR_CTL_UUID']:
         global atv_ctl_chrc
         atv_ctl_chrc = (chrc, chrc_props)
         print('found ATV CTL characteristic: ' + uuid)
-    elif uuid == ATV_CHAR_TX_UUID:
+    elif uuid == service_uuids_info['CHAR_TX_UUID']:
         global atv_tx_chrc
         atv_tx_chrc = (chrc, chrc_props)
         print('found ATV TX characteristic: ' + uuid)
-    elif uuid == ATV_CHAR_RX_UUID:
+    elif uuid == service_uuids_info['CHAR_RX_UUID']:
         global atv_rx_chrc
         atv_rx_chrc = (chrc, chrc_props)
         print('found ATV RX characteristic: ' + uuid)
@@ -236,14 +285,15 @@ def process_atv_service(service_path, chrc_paths):
 
     uuid = service_props['UUID']
 
-    if uuid != ATV_SVC_UUID:
+    if uuid not in VOICE_SERVICE_INFO.keys():
         return False
 
     print('ATV Service found: ' + service_path)
+    service_uuids_info = VOICE_SERVICE_INFO[uuid]
 
     # Process the characteristics.
     for chrc_path in chrc_paths:
-        process_atv_chrc(chrc_path)
+        process_atv_chrc(chrc_path, service_uuids_info)
 
     global atv_service
     atv_service = (service, service_props, service_path)
