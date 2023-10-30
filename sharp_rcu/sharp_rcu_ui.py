@@ -369,7 +369,7 @@ class Ui_SharpRcuDlg(object):
         self.mBtnOpen8k.setText(_translate("SharpRcuDlg", "open"))
         self.mRdCaptureVoice.setText(_translate("SharpRcuDlg", "Capture by voice"))
         self.mRdCaptureFile.setText(_translate("SharpRcuDlg", "Capture by file"))
-        self.KEY_SHARP_VOICE_SIMULATE.setText(_translate("SharpRcuDlg", "Siomulating HTT by send"))
+        self.KEY_SHARP_VOICE_SIMULATE.setText(_translate("SharpRcuDlg", "Simulating HTT by send"))
         self.KEY_SOURCE.setText(_translate("SharpRcuDlg", "SOURCE"))
         self.KEY_GUIDE.setText(_translate("SharpRcuDlg", "GUIDE"))
         self.KEY_MENU.setText(_translate("SharpRcuDlg", "MENU"))

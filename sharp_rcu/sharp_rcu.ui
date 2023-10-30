@@ -504,7 +504,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>Siomulating HTT by send</string>
+    <string>Simulating HTT by send</string>
    </property>
    <property name="autoRepeatDelay">
     <number>306</number>
