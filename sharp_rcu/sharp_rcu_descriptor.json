@@ -60,6 +60,10 @@
          "REFER_TO_HID_REPORT":"CONSUMER_REPORT",
          "KEY_CODE":"23020000"
       },
+      "KEY_EXIT":{
+         "REFER_TO_HID_REPORT":"CONSUMER_REPORT",
+         "KEY_CODE":"94000000"
+      },
       "KEY_APPS":{
          "REFER_TO_HID_REPORT":"CONSUMER_REPORT",
          "KEY_CODE":"3e000000"
@@ -95,6 +99,22 @@
       "KEY_MUTE":{
          "REFER_TO_HID_REPORT":"CONSUMER_REPORT",
          "KEY_CODE":"e2000000"
+      },
+      "KEY_GUIDE":{
+         "REFER_TO_HID_REPORT":"CONSUMER_REPORT",
+         "KEY_CODE":"bc000000"
+      },
+      "KEY_MENU":{
+         "REFER_TO_HID_REPORT":"CONSUMER_REPORT",
+         "KEY_CODE":"40000000"
+      },
+      "KEY_INFO":{
+         "REFER_TO_HID_REPORT":"CONSUMER_REPORT",
+         "KEY_CODE":"60000000"
+      },
+      "KEY_SOURCE":{
+         "REFER_TO_HID_REPORT":"CONSUMER_REPORT",
+         "KEY_CODE":"91000000"
       },
       "KEY_1":{
          "REFER_TO_HID_REPORT":"CONSUMER_REPORT",
@@ -135,6 +155,70 @@
       "KEY_0":{
          "REFER_TO_HID_REPORT":"CONSUMER_REPORT",
          "KEY_CODE":"83000000"
+      },
+      "KEY_NETFLIX":{
+         "REFER_TO_HID_REPORT":"CONSUMER_REPORT",
+         "KEY_CODE":"8e01000000"
+      },
+      "KEY_PV":{
+         "REFER_TO_HID_REPORT":"CONSUMER_REPORT",
+         "KEY_CODE":"7000000000"
+      },
+      "KEY_YOUTUBE":{
+         "REFER_TO_HID_REPORT":"CONSUMER_REPORT",
+         "KEY_CODE":"7300000000"
+      },
+      "KEY_FPLAY":{
+         "REFER_TO_HID_REPORT":"CONSUMER_REPORT",
+         "KEY_CODE":"3200000000"
+      },
+      "KEY_AUDIO":{
+         "REFER_TO_HID_REPORT":"CONSUMER_REPORT",
+         "KEY_CODE":"8e00000000"
+      },
+      "KEY_SUB":{
+         "REFER_TO_HID_REPORT":"CONSUMER_REPORT",
+         "KEY_CODE":"9800000000"
+      },
+      "KEY_TEXT":{
+         "REFER_TO_HID_REPORT":"CONSUMER_REPORT",
+         "KEY_CODE":"9700000000"
+      },
+      "KEY_TV":{
+         "REFER_TO_HID_REPORT":"CONSUMER_REPORT",
+         "KEY_CODE":"ac00000000"
+      },
+      "KEY_PS":{
+         "REFER_TO_HID_REPORT":"CONSUMER_REPORT",
+         "KEY_CODE":"b000000000"
+      },
+      "KEY_RWD":{
+         "REFER_TO_HID_REPORT":"CONSUMER_REPORT",
+         "KEY_CODE":"b400000000"
+      },
+      "KEY_FWD":{
+         "REFER_TO_HID_REPORT":"CONSUMER_REPORT",
+         "KEY_CODE":"b300000000"
+      },
+      "KEY_STOP":{
+         "REFER_TO_HID_REPORT":"CONSUMER_REPORT",
+         "KEY_CODE":"b100000000"
+      },
+      "KEY_RED":{
+         "REFER_TO_HID_REPORT":"CONSUMER_REPORT",
+         "KEY_CODE":"6900000000"
+      },
+      "KEY_GREEN":{
+         "REFER_TO_HID_REPORT":"CONSUMER_REPORT",
+         "KEY_CODE":"6a00000000"
+      },
+      "KEY_YELLOW":{
+         "REFER_TO_HID_REPORT":"CONSUMER_REPORT",
+         "KEY_CODE":"6b00000000"
+      },
+      "KEY_BLUE":{
+         "REFER_TO_HID_REPORT":"CONSUMER_REPORT",
+         "KEY_CODE":"6c00000000"
       }
    }
 }
