@@ -201,7 +201,7 @@ class VoiceService(Service):
         if int(command_val) == TV_TX_GET_CAPS:
             print(f'HandleTvTx, will handle get caps..')
             get_cap_resp_byte = struct.pack('>B', RCU_CTL_GET_CAP_RESP)
-            version = 0x0010
+            version = 0x0100
             version_bytes = struct.pack('>H', version)
             codec = 1
             codec_byte = struct.pack('>B', codec)
