@@ -23,7 +23,6 @@ device_info=$(echo "$raw_device_info" | grep "Device")
 
 if [ -z "$device_info" ]; then
     echo "No devices found. No need to clean the BLE info, exiting script."
-    exit 1
 fi
 
 device_array=()

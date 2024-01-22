@@ -9,8 +9,7 @@ scan_thread() {
   echo "Remote begin to scan.."
   result=$(ssh "$ssh_user@$target_ip" "bluetoothctl --timeout 20 scan on")
 }
-echo "1.Obtained sudo privileges.."
-sudo echo "Obtained sudo privileges ok"
+
 ssh_user="root"
 target_rcu_name="$1"
 echo "target_rcu_name = $target_rcu_name"

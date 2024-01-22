@@ -7,7 +7,7 @@ import tivo_rcu.ble_voice_service
 
 class SharpRCUAdvertisement(Advertisement):
 
-    DISCOVERABLE_NAME = "SHARP RCU"
+    DISCOVERABLE_NAME = "SHARP RCU SIMULATOR"
     
     BASE_PATH = bluetooth_constants.BLUEZ_OBJ_ROOT + "advertisement"
     

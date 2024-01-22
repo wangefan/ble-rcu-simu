@@ -1,4 +1,6 @@
 #!/usr/bin/python3
+import subprocess
+import os
 import bluetooth_constants
 import dbus.mainloop.glib
 from gi.repository import GLib
@@ -225,9 +227,44 @@ def closeAll():
     if g_core_application != None:
         g_core_application.quit()
 
+def checkSshConnection(ssh_user, target_ip):
+    try:
+        TRY_TIMES = 2
+        for i in range(TRY_TIMES):
+            result = subprocess.run(["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=5", f"{ssh_user}@{target_ip}", "echo 1"], 
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE,
+                                    text=True,
+                                    check=False)
+            output = result.stdout
+            error_output = result.stderr
+            if "Host key verification failed" in error_output:
+                print(f"SSH connection fail with key verification!")
+                answer = input("Do you want to accept the new RSA key fingerprint? (yes/no): ")
+                if answer.lower() == "yes":
+                    # 接受新的 RSA 密钥指纹
+                    known_hosts_path = os.path.expanduser("~/.ssh/known_hosts")
+                    os.system(f"ssh-keyscan -H {target_ip} >> {known_hosts_path}")
+                    print("RSA key fingerprint accepted.")
+                    continue
+                else:
+                    print("User chose not to accept the new RSA key fingerprint. Exiting script.")
+                    return False
+            elif result.returncode == 0:
+                print("SSH connection successful.")
+                return True
+            else:
+                print("SSH connection failed. Check the error output.")
+                print("Error Output:", error_output)
+                return False
+
+    except subprocess.CalledProcessError as error:
+        return False
 
 def main():
     parser = argparse.ArgumentParser(description='RCU tool parameters')
+    parser.add_argument('-ip', dest='ip_address', nargs='?', type=str, default='10.82.83.8',
+                    help='Specify IPv4 address')
     parser.add_argument('-io', dest='io_capability_type', nargs='?', type=int, default=0,
                         help='Specify the IO capability of the device, 0: NoInputNoOutput, 1: DisplayYesNo, 2: KeyboardDisplay, 3: DisplayOnly, 4:  KeyboardOnly')
     parser.add_argument('-rc', dest='rc_type', nargs='?', type=int, default=0,
@@ -247,6 +284,36 @@ def main():
 
     rc_type = args.rc_type
 
+    # handle clearing cache
+    clear_aml_devices_script_path = "./clear_aml_devices.sh"
+    return_code = subprocess.call([clear_aml_devices_script_path], shell=True)
+    if return_code == 0:
+        print("clear_aml_devices ok")
+    else:
+        print("clear_aml_devices fail", return_code)
+        return
+    # Handle device discovery
+    discover_devices_name = "Unknown Device Name"
+    if rc_type == 1:
+        discover_devices_name = TiVoS4KRCUAdvertisement.DISCOVERABLE_NAME
+    elif rc_type == 0:
+        discover_devices_name = SharpRCUAdvertisement.DISCOVERABLE_NAME
+
+    ip_address = args.ip_address
+    if ip_address == None or ip_address == "":
+        print("ip_address is None or empty")
+        return
+
+    if not checkSshConnection("root", ip_address):
+        print(f"checkSshConnection fail, ip_address = {ip_address}")
+        return
+
+    discover_devices_script_path = f"./aml_device_auto_connect.sh \"{discover_devices_name}\" \"{ip_address}\""
+    print(f"discover_devices_script_path = {discover_devices_script_path}")
+    p = subprocess.Popen(
+        [discover_devices_script_path], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    print("aml_device_auto_connect ok")
+    
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
     bus = dbus.SystemBus()
 
