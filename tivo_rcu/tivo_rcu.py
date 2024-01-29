@@ -102,13 +102,13 @@ class TivoRcuDlg(QtWidgets.QDialog):
         sender = self.sender()
         key_name = sender.objectName()
         print('onPressed, key_name = ' + sender.objectName())
-        self.key_detector.onPressed(key_name)
+        self.key_detector.pressDetected(key_name)
 
     def onReleased(self):
         sender = self.sender()
         key_name = sender.objectName()
         print('onReleased, key_name = ' + sender.objectName())
-        self.key_detector.onReleased(key_name)
+        self.key_detector.releaseDetected(key_name)
 
     def captureKeyboardClicked(self):
         bCaptureKeyboard = self.ui.mCkbCaptureKeyboard.isChecked()

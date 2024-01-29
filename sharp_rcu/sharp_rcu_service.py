@@ -3,6 +3,7 @@ import dbus.service
 import bluetooth_constants
 import bluetooth_utils
 from gi.repository import GLib
+from gesture_event_monitor import GestureMonitor
 from sharp_rcu.ble_hogp import DeviceInfoService, BatteryService, HIDService
 from key_event_monitor import KeyEventMonitor
 from sharp_rcu.sharp_rcu import SharpRcuDlg
@@ -35,6 +36,9 @@ class SharpRCUService(dbus.service.Object):
         self.connected_device_path = None
         self.KeyEventMonitor = KeyEventMonitor(self.onKeyEvent, self.onExit)
         self.KeyEventMonitor.start()
+
+        self.GestureMonitor = GestureMonitor(self.onKeyEvent)
+        self.GestureMonitor.start()
 
         self.exit_listener = exit_listener
 

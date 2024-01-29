@@ -43,9 +43,9 @@ class KeyEventMonitor(threading.Thread):
 
             if self.b_capture_keyboard:
                 if event.event_type == keyboard.KEY_DOWN:
-                    self.key_detector.onPressed(event.name)
+                    self.key_detector.pressDetected(event.name)
                 elif event.event_type == keyboard.KEY_UP:
-                    self.key_detector.onReleased(event.name)
+                    self.key_detector.releaseDetected(event.name)
 
         if self.key_exit_listener != None:
             self.key_exit_listener()

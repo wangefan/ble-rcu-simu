@@ -28,7 +28,7 @@ class KeyDetector():
             print(
                 f'KeyDetector.detectKeyTimeout, {key_name} with state: {key_state} is not valid')
 
-    def onPressed(self, key_name):
+    def pressDetected(self, key_name):
         if self.key_state_keeper == None:
             self.key_state_keeper = {key_name: KEY_STATE_TO_DETERMINE}
             self.detect_key_timer = Timer(
@@ -36,9 +36,10 @@ class KeyDetector():
             self.detect_key_timer.start()
         else:
             print(
-                f'KeyDetector.onPressed error: previous {key_name} onPressed has not get onReleased yet, ignore!')
+                f"KeyDetector.pressDetected error: previous {key_name} pressDetected has not get releaseDetected yet, ignore!"
+            )
 
-    def onReleased(self, key_name):
+    def releaseDetected(self, key_name):
         self.detect_key_timer.cancel()
         self.detect_key_timer = None
 
