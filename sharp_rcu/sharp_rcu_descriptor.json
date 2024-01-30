@@ -44,6 +44,10 @@
          "REFER_TO_HID_REPORT":"CONSUMER_REPORT",
          "KEY_CODE":"21020000"
       },
+      "KEY_SHARP_VOICE_SIMULATE":{
+         "REFER_TO_HID_REPORT":"CONSUMER_REPORT",
+         "KEY_CODE":"21020000"
+      },
       "KEY_SEL":{
          "REFER_TO_HID_REPORT":"CONSUMER_REPORT",
          "KEY_CODE":"41000000"
