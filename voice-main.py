@@ -161,6 +161,10 @@ def atv_ctl_changed_cb(iface, changed_props, invalidated_props):
             print('CTL Get CAPS RESP v1.0 received')
             rcu_version = RCU_VERSION_1_0
             AUDIO_FRAME_LENGTH = 128 #128 bytes adpcm data without header
+        elif major_ver == 0x01 and minor_ver == 0x01:
+            print('CTL Get CAPS RESP v1.1 received')
+            rcu_version = RCU_VERSION_1_0
+            AUDIO_FRAME_LENGTH = 128 #128 bytes adpcm data without header
         else:
             print('CTL Get CAPS RESP unknown version received')
 
